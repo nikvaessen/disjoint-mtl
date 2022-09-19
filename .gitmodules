@@ -1,3 +1,0 @@
-[submodule "data_utility"]
-	path = data_utility
-	url = git@gitlab.science.ru.nl:nvaessen/data_utility.git

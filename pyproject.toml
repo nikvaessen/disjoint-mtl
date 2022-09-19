@@ -10,7 +10,7 @@ black = {extras = ["d"], version = "^22.8.0"}
 psutil = "^5.9.2"
 "hurry.filesize" = "^0.9"
 torch = "^1.12.1"
-data-utility = {path = "./data_utility"}
+data-utility = { path = "../data_utility" }
 
 [tool.poetry.dev-dependencies]
 
