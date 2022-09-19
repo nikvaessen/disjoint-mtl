@@ -1,5 +1,5 @@
 defaults:
-  - _self_ 
+  - _self_
   - callbacks: speaker_default
   - data: voxceleb2
   - speaker/pipeline: base_wav_chunked
@@ -11,7 +11,7 @@ defaults:
   - optim/loss: cross_entropy
   - trainer: trainer
 
-# root directory with subfolders containing the canonical dataset(s)
+# root directory with ssubfolders containing the canonical dataset(s)
 data_folder: ${oc.env:DATA_FOLDER}
 
 # directory for temporary storage
