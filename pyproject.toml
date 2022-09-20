@@ -6,11 +6,16 @@ authors = ["Nik Vaessen <git@mail.vaessen.tech>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-black = {extras = ["d"], version = "^22.8.0"}
+black = { extras = ["d"], version = "^22.8.0" }
 psutil = "^5.9.2"
 "hurry.filesize" = "^0.9"
 torch = "^1.12.1"
 data-utility = { path = "../data_utility" }
+pytorch-lightning = "^1.7.6"
+wandb = "^0.13.3"
+transformers = "^4.22.1"
+omegaconf = "^2.2.3"
+hydra-core = "^1.2.0"
 
 [tool.poetry.dev-dependencies]
 
