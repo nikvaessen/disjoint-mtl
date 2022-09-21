@@ -108,3 +108,15 @@ def reset_model(model: t.nn.Module, top=True):
                 reset_model(layer, top=False)
             else:
                 print(f"{layer} cannot be reset")
+
+
+########################################################################################
+# freeze/unfreeze a module and all it's parameters
+
+
+def freeze_module(mod: t.nn.Module):
+    mod.requires_grad_(False)
+
+
+def unfreeze_module(mod: t.nn.Module):
+    mod.requires_grad_(True)

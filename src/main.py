@@ -8,7 +8,7 @@
 
 import logging
 
-from typing import List
+from typing import List, Dict, Union, Callable
 
 import torch as t
 import pytorch_lightning as pl
@@ -22,6 +22,7 @@ from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 
+import src.optim.loss.cross_entropy
 from data_utility.pipe.builder import (
     SpeakerRecognitionDataPipeBuilder,
     SpeechRecognitionDataPipeBuilder,
@@ -29,6 +30,10 @@ from data_utility.pipe.builder import (
 from src.data.module.librispeech import (
     LibriSpeechDataModuleConfig,
     LibriSpeechDataModule,
+)
+from src.networks.wav2vec2.w2v2_speaker import (
+    Wav2vec2ForSpeakerRecognitionConfig,
+    Wav2vec2ForSpeakerRecognition,
 )
 from src.util.system import get_git_revision_hash
 
@@ -87,8 +92,95 @@ def construct_data_module(cfg: DictConfig):
 # implement construction of network modules
 
 
-def construct_network_module(cfg: DictConfig):
-    pass
+def construct_speaker_recognition_module(
+        cfg: DictConfig,
+        network_cfg: Union[Wav2vec2ForSpeakerRecognitionConfig],
+        dm: Union[LibriSpeechDataModule],
+        loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
+):
+    # every speaker recognition network needs to be given these variables
+    # for training purposes
+    num_speakers = dm.get_num_train_speakers()
+    validation_pairs = dm.get_val_speaker_eval_list()
+    test_pairs = dm.get_test_speaker_eval_list()
+    test_names = dm.get_test_names()
+
+    # get init function based on config type
+    if isinstance(network_cfg, Wav2vec2ForSpeakerRecognitionConfig):
+        network_class = Wav2vec2ForSpeakerRecognition
+    else:
+        raise ValueError(f"cannot load network from {network_cfg}")
+
+    # init model
+    kwargs = {
+        "root_hydra_config": cfg,
+        "loss_fn_constructor": loss_fn_constructor,
+        "num_speakers": num_speakers,
+        "validation_pairs": validation_pairs,
+        "test_pairs": test_pairs,
+        "test_names": test_names,
+        "cfg": network_cfg,
+    }
+
+    return init_model(cfg, network_class, kwargs)
+
+
+def init_model(cfg: DictConfig, network_class, kwargs: Dict):
+    # load model weights from checkpoint
+    potential_checkpoint_path = cfg.get("load_network_from_checkpoint", None)
+
+    if potential_checkpoint_path is not None:
+        log.info(
+            f"reloading {network_class.__class__} from {potential_checkpoint_path}"
+        )
+        network = network_class.load_from_checkpoint(
+            cfg.load_network_from_checkpoint, strict=False, **kwargs
+        )
+    else:
+        network = network_class(**kwargs)
+
+    return network
+
+
+def construct_network_module(
+        cfg: DictConfig,
+        dm: Union[LibriSpeechDataModule],
+):
+    # load loss function
+    def loss_fn_constructor():
+        # should be instantiated in the network
+        # so that potential parameters are properly
+        # registered
+        return instantiate(cfg.optim.loss)
+
+    # load network config
+    network_cfg = instantiate(cfg.network)
+
+    if isinstance(network_cfg, Wav2vec2ForSpeakerRecognitionConfig):
+        network = construct_speaker_recognition_module(
+            cfg, network_cfg, dm, loss_fn_constructor
+        )
+    else:
+        raise ValueError(
+            f"can not construct network for network_cfg type {network_cfg.__class__}"
+        )
+
+    # set optimizer and learning rate schedule
+    optimizer = instantiate(cfg.optim.algo, params=network.parameters())
+    schedule = {
+        "scheduler": instantiate(cfg.optim.schedule.scheduler, optimizer=optimizer),
+        "monitor": cfg.optim.schedule.monitor,
+        "interval": cfg.optim.schedule.interval,
+        "frequency": cfg.optim.schedule.frequency,
+        "name": cfg.optim.schedule.name,
+    }
+    # remove None values from dict
+    schedule = {k: v for k, v in schedule.items() if v is not None}
+
+    network.set_optimizer(optimizer)
+    network.set_lr_schedule(schedule)
+
+    return network
 
 
 ########################################################################################
@@ -130,8 +222,6 @@ def construct_logger(cfg: DictConfig):
     if cfg.use_wandb:
         if isinstance(cfg.tag, str):
             cfg.tag = [cfg.tag]
-        if cfg.run_lr_range_test:
-            cfg.tag.append("lr_range_test")
 
         logger = WandbLogger(
             project=cfg.project_name,
@@ -182,8 +272,6 @@ def run_train_eval_script(cfg: DictConfig):
     # construct lighting module for train/test
     network = construct_network_module(cfg, dm)
 
-    exit()
-
     # train model
     if cfg.fit_model:
         trainer.fit(network, datamodule=dm)
@@ -198,45 +286,23 @@ def run_train_eval_script(cfg: DictConfig):
     # create a new trainer which uses at most 1 gpu
     trainer: pl.Trainer = instantiate(
         cfg.trainer,
-        gpus=min(1, int(cfg.trainer.get("gpus"))),
-        accelerator=None,
+        devices=min(1, cfg.trainer.get("devices", 0)),
         logger=logger,
         callbacks=callbacks,
         profiler=profiler,
     )
 
-    result = None
     if cfg.eval_model and cfg.fit_model:
         # this will select the checkpoint with the best validation metric
         # according to the ModelCheckpoint callback
         try:
-            result = trainer.test(datamodule=dm)
+            trainer.test(datamodule=dm)
         except:
             # there might not have been a validation epoch
-            result = trainer.test(network, datamodule=dm)
+            trainer.test(network, datamodule=dm)
     elif cfg.eval_model:
         # this will simply test the given model weights (when it's e.g
         # manually loaded from a checkpoint)
-        result = trainer.test(network, datamodule=dm)
-
-    if result is not None:
-        if isinstance(result, list):
-            result_obj = result[0]
-
-            if "test_eer_val" in result_obj:
-                objective = result_obj["test_eer_val"]
-            elif "test_eer_o" in result_obj:
-                objective = result_obj["test_eer_o"]
-            elif "test_wer_other" in result_obj:
-                objective = result_obj["test_wer_other"]
-            else:
-                raise ValueError(
-                    f"unknown objective value out of keys "
-                    f"{[k for k in result_obj.keys()]} and {result}"
-                )
-
-            return objective
-        else:
-            raise ValueError(f"result object has unknown type {type(result)=}")
+        trainer.test(network, datamodule=dm)
 
     return None

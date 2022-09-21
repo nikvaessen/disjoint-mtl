@@ -18,14 +18,13 @@ import torchmetrics
 from omegaconf import DictConfig
 from tqdm import tqdm
 
-from src.evaluation.speaker.cosine_distance import CosineDistanceEvaluator
-from src.evaluation.speaker.speaker_recognition_evaluator import (
-    EvaluationPair,
-    EmbeddingSample,
+from data_utility.eval.speaker.cosine_dist_evaluator import CosineDistanceEvaluator
+from data_utility.eval.speaker.evaluator import (
     SpeakerRecognitionEvaluator,
+    EmbeddingSample,
 )
-from src.data import batches
-from src.pl_modules.base_lightning_module import BaseLightningModule
+from data_utility.pipe.types import SpeakerTrial, SpeakerRecognitionBatch
+from src.networks.base_lightning_module import BaseLightningModule
 
 ################################################################################
 # Definition of speaker recognition API
@@ -41,8 +40,8 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
             root_hydra_config: DictConfig,
             loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
             num_speakers: int,
-            validation_pairs: List[EvaluationPair],
-            test_pairs: List[List[EvaluationPair]],
+            validation_pairs: List[SpeakerTrial],
+            test_pairs: List[List[SpeakerTrial]],
             test_names: List[str],
     ):
         super().__init__(root_hydra_config, loss_fn_constructor)
@@ -89,14 +88,14 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
 
     def training_step(
             self,
-            batch: batches.SpeakerClassificationDataBatch,
+            batch: SpeakerRecognitionBatch,
             batch_idx: int,
             optimized_idx: Optional[int] = None,
     ):
-        assert isinstance(batch, batches.SpeakerClassificationDataBatch)
+        assert isinstance(batch, SpeakerRecognitionBatch)
 
-        audio_input = batch.audio_input
-        spk_label = batch.ground_truth
+        audio_input = batch.audio_tensor
+        spk_label = batch.id_tensor
 
         embedding = self.compute_speaker_embedding(audio_input)
 
@@ -139,14 +138,14 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
 
     def validation_step(
             self,
-            batch: batches.SpeakerClassificationDataBatch,
+            batch: SpeakerRecognitionBatch,
             batch_idx: int,
             dataloader_idx: Optional[int] = None,
     ):
-        assert isinstance(batch, batches.SpeakerClassificationDataBatch)
+        assert isinstance(batch, SpeakerRecognitionBatch)
 
-        audio_input = batch.audio_input
-        label = batch.ground_truth
+        audio_input = batch.audio_tensor
+        label = batch.id_tensor
         sample_id = batch.keys
 
         embedding = self.compute_speaker_embedding(audio_input)
@@ -160,7 +159,12 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
         self.metric_valid_acc(prediction, label)
         self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
 
-        return {"embedding": embedding.detach().to("cpu"), "sample_id": sample_id}
+        return_dict = {
+            "embedding": embedding.detach().to("cpu"),
+            "sample_id": sample_id,
+        }
+
+        return return_dict
 
     def validation_epoch_end(self, outputs: List[Any]) -> None:
         results = evaluate_embeddings(
@@ -179,16 +183,16 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
 
     def test_step(
             self,
-            batch: batches.SpeakerClassificationDataBatch,
+            batch: SpeakerRecognitionBatch,
             batch_idx: int,
             dataloader_idx: Optional[int] = None,
     ):
-        assert isinstance(batch, batches.SpeakerClassificationDataBatch)
+        assert isinstance(batch, SpeakerRecognitionBatch)
 
         if batch.batch_size != 1:
             raise ValueError("expecting a batch size of 1 for evaluation")
 
-        audio_input = batch.audio_input
+        audio_input = batch.audio_tensor
         sample_id = batch.keys
 
         embedding = self.compute_speaker_embedding(audio_input)
@@ -204,7 +208,6 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
         assert embedding.shape[1] == self.speaker_embedding_size
 
         embedding = t.stack([embedding.detach().to("cpu")])
-        # embedding = embedding.detach().to("cpu")
 
         return {
             "embedding": embedding,
@@ -237,13 +240,9 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
 def evaluate_embeddings(
         evaluator: SpeakerRecognitionEvaluator,
         outputs: List[dict],
-        pairs: List[EvaluationPair],
+        pairs: List[SpeakerTrial],
         print_info: bool,
-        log_to_dir: Optional[pathlib.Path] = None,
-        vocab_map: Optional[Dict[str, int]] = None,
 ):
-    print()
-    print(f"{log_to_dir=}")
     # outputs is a list of dictionary with at least keys:
     # 'embedding' -> tensor with shape [BATCH_SIZE, EMBEDDING_SIZE]
     # 'sample_id' -> list of keys with length BATCH_SIZE
@@ -251,75 +250,6 @@ def evaluate_embeddings(
 
     result = evaluator.evaluate(pairs, embedding_list, print_info=print_info)
     result = {k: t.Tensor([v]) for k, v in result.items()}
-
-    # optionally, save output to disk
-    if log_to_dir is not None:
-        transcriptions = []
-        letter_prediction_tensors = []
-        speaker_embedding_tensor = []
-        embedding_sequence_tensor = []
-        key_list = []
-
-        for d in outputs:
-            if "transcription" in d:
-                transcriptions.extend(d["transcription"])
-            if "prediction" in d:
-                letter_prediction_tensors.append(d["prediction"])
-            if "embedding" in d:
-                speaker_embedding_tensor.append(d["embedding"])
-            if "embedding_sequence" in d:
-                embedding_sequence_tensor.append(d["embedding_sequence"])
-            if "sample_id" in d:
-                key_list.extend(d["sample_id"])
-
-        log_to_dir.mkdir(exist_ok=True, parents=True)
-
-        with (log_to_dir / "predictions.txt").open("w") as f:
-            f.writelines("\n".join(transcriptions))
-
-        with (log_to_dir / "vocabulary.json").open("w") as f:
-            json.dump(vocab_map, f)
-
-        with (log_to_dir / "idx_to_key.json").open("w") as f:
-            print(f"{len(key_list)=}")
-            json.dump({str(idx): key for idx, key in enumerate(key_list)}, f)
-
-        if len(letter_prediction_tensors) > 0:
-            (log_to_dir / "letter_prediction_tensors").mkdir(
-                exist_ok=True, parents=True
-            )
-            print(
-                f"saving {len(letter_prediction_tensors)=} letter predictions to disk"
-            )
-
-            for idx, tensor in tqdm(enumerate(letter_prediction_tensors)):
-                t.save(
-                    tensor, str(log_to_dir / "letter_prediction_tensors" / f"{idx}.pt")
-                )
-
-        if len(speaker_embedding_tensor) > 0:
-            (log_to_dir / "speaker_embeddings_tensor").mkdir(
-                exist_ok=True, parents=True
-            )
-            print(f"saving {len(speaker_embedding_tensor)=} speaker embeddings to disk")
-
-            for idx, tensor in tqdm(enumerate(speaker_embedding_tensor)):
-                t.save(
-                    tensor, str(log_to_dir / "speaker_embeddings_tensor" / f"{idx}.pt")
-                )
-
-        if len(embedding_sequence_tensor) > 0:
-            (log_to_dir / "embedding_sequence_tensor").mkdir(
-                exist_ok=True, parents=True
-            )
-            print(
-                f"saving {len(embedding_sequence_tensor)=} embedding sequences to disk"
-            )
-
-            for idx, tensor in tqdm(enumerate(speaker_embedding_tensor)):
-                t.save(
-                    tensor, str(log_to_dir / "embedding_sequence_tensor" / f"{idx}.pt")
-                )
 
     return result
 
@@ -331,27 +261,12 @@ def extract_embedding_sample_list(outputs: List[dict]):
         embedding_tensor = d["embedding"]
         sample_id_list = d["sample_id"]
 
-        if isinstance(embedding_tensor, list):
-            if len(sample_id_list) != embedding_tensor[0].shape[0]:
-                raise ValueError("batch dimension is missing or incorrect")
-        else:
-            if len(sample_id_list) != embedding_tensor.shape[0]:
-                raise ValueError("batch dimension is missing or incorrect")
-
         for idx, sample_id in enumerate(sample_id_list):
-            if isinstance(embedding_tensor, list):
-                embedding_list.append(
-                    EmbeddingSample(
-                        sample_id=sample_id,
-                        embedding=[e[idx, :].squeeze() for e in embedding_tensor],
-                    )
+            embedding_list.append(
+                EmbeddingSample(
+                    sample_id=sample_id,
+                    embedding=embedding_tensor[idx, :].squeeze(),
                 )
-            else:
-                embedding_list.append(
-                    EmbeddingSample(
-                        sample_id=sample_id,
-                        embedding=embedding_tensor[idx, :].squeeze(),
-                    )
-                )
+            )
 
     return embedding_list

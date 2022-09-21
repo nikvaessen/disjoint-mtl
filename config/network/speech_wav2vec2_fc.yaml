@@ -1,5 +1,5 @@
 # instantiate the x-vector network lightning module config object
-_target_: src.pl_modules.speech.Wav2vec2SpeechRecognitionModuleConfig
+_target_: src.networks.speech.Wav2vec2SpeechRecognitionModuleConfig
 
 # pretrained weights of wav2vec model
 wav2vec_huggingface_id: "facebook/wav2vec2-base"

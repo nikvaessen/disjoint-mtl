@@ -1,5 +1,5 @@
 # instantiate the x-vector network lightning module config object
-_target_: src.pl_modules.mt.mt_wav2vec2.MultiTaskWav2vec2ModuleConfig
+_target_: src.networks.mt.mt_wav2vec2.MultiTaskWav2vec2ModuleConfig
 
 # pretrained weights of wav2vec model
 wav2vec_huggingface_id: "facebook/wav2vec2-base"

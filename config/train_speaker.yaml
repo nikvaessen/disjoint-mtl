@@ -4,13 +4,10 @@ defaults:
   - data/module: librispeech_speaker
   - data/speaker_datapipe: default_datapipe
   - data/speech_datapipe: default_datapipe
-  #  - speaker/pipeline: base_wav_chunked
-  #  - speaker/dataloader: speaker
-  #  - network: speaker_wav2vec2_fc
-  #  - network/regularisation: wav2vec2_default_asr
-  #  - optim/algo: adam
-  #  - optim/schedule: constant
-  #  - optim/loss: cross_entropy
+  - network: speaker_wav2vec2_fc
+  - optim/algo: adam
+  - optim/schedule: constant
+  - optim/loss: cross_entropy
   - trainer: trainer_gpu
 
 # directory for slurm and hydra logs

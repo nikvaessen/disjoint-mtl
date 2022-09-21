@@ -10,7 +10,7 @@ import pathlib
 
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.types import TRAIN_DATALOADERS, EVAL_DATALOADERS
@@ -20,6 +20,7 @@ from data_utility.pipe.builder import (
     SpeakerRecognitionDataPipeBuilder,
     SpeechRecognitionDataPipeBuilder,
 )
+from data_utility.pipe.types import SpeakerTrial
 from src.util.config_util import CastingConfig
 
 
@@ -91,12 +92,17 @@ class LibriSpeechDataModule(LightningDataModule):
             self.train_pipe_builder = speech_pipe_builders[0]
             self.val_pipe_builder = speech_pipe_builders[1]
             self.test_pipe_builder = speech_pipe_builders[2]
+            self._set_character_to_idx()
+
         elif self.cfg.task_mode == "speaker":
             self.train_pipe_builder = speaker_pipe_builders[0]
             self.val_pipe_builder = speaker_pipe_builders[1]
             self.test_pipe_builder = speaker_pipe_builders[2]
+            self._set_speaker_to_idx()
+
         elif self.cfg.task_mode == "mtl":
             raise NotImplemented()
+
         else:
             raise ValueError(f"unknown {self.cfg.task_mode=}")
 
@@ -107,18 +113,70 @@ class LibriSpeechDataModule(LightningDataModule):
         self.test_dp_clean = None
         self.test_dp_other = None
 
-    @lru_cache(1)
     def _train_speakers_json(self):
         with self.cfg.train_speaker_json.open("r") as f:
             return json.load(f)
 
-    @lru_cache(1)
+    def _val_speakers_json(self):
+        with self.cfg.dev_speaker_json.open("r") as f:
+            return json.load(f)
+
+    def _test_speakers_json(self):
+        with self.cfg.test_speaker_json.open("r") as f:
+            return json.load(f)
+
     def _character_vocab_json(self):
         with self.cfg.char_vocab_json.open("r") as f:
             return json.load(f)
 
-    def num_train_speakers(self):
+    def _set_speaker_to_idx(self):
+        assert isinstance(self.train_pipe_builder, SpeakerRecognitionDataPipeBuilder)
+        assert isinstance(self.val_pipe_builder, SpeakerRecognitionDataPipeBuilder)
+        assert isinstance(self.test_pipe_builder, SpeakerRecognitionDataPipeBuilder)
+
+        self.train_pipe_builder.set_speaker_to_idx(
+            self._train_speakers_json()["speaker_to_idx"]
+        )
+        self.val_pipe_builder.set_speaker_to_idx(
+            self._val_speakers_json()["speaker_to_idx"]
+        )
+        self.test_pipe_builder.set_speaker_to_idx(
+            self._test_speakers_json()["speaker_to_idx"]
+        )
+
+    def _set_character_to_idx(self):
+        assert isinstance(self.train_pipe_builder, SpeechRecognitionDataPipeBuilder)
+        assert isinstance(self.val_pipe_builder, SpeechRecognitionDataPipeBuilder)
+        assert isinstance(self.test_pipe_builder, SpeechRecognitionDataPipeBuilder)
+
+        self.train_pipe_builder.set_char_to_idx(
+            self._character_vocab_json()["char_to_idx"]
+        )
+        self.val_pipe_builder.set_char_to_idx(
+            self._character_vocab_json()["char_to_idx"]
+        )
+        self.test_pipe_builder.set_char_to_idx(
+            self._character_vocab_json()["char_to_idx"]
+        )
+
+    def get_num_train_speakers(self) -> int:
         return len(self._train_speakers_json()["speakers"])
+
+    def get_val_speaker_eval_list(self) -> List[SpeakerTrial]:
+        return SpeakerTrial.from_file(self.cfg.dev_clean_trial_path)
+
+    def get_test_speaker_eval_list(self) -> List[List[SpeakerTrial]]:
+        return [
+            SpeakerTrial.from_file(f)
+            for f in [
+                self.cfg.dev_other_trial_path,
+                self.cfg.test_clean_trial_path,
+                self.cfg.test_other_trial_path,
+            ]
+        ]
+
+    def get_test_names(self):
+        return ["dev_other", "test_clean", "test_other"]
 
     def character_vocab(self):
         return len(self._character_vocab_json()["characters"])
@@ -154,17 +212,17 @@ class LibriSpeechDataModule(LightningDataModule):
             shard_dirs=self.cfg.val_clean_shard_path,
             shard_file_pattern=self.cfg.shard_file_pattern,
         )
-        self.val_dp_other = self.val_pipe_builder.get_pipe(
+
+        # test dp
+        self.val_dp_other = self.test_pipe_builder.get_pipe(
             shard_dirs=self.cfg.val_other_shard_path,
             shard_file_pattern=self.cfg.shard_file_pattern,
         )
-
-        # test dp
         self.test_dp_clean = self.test_pipe_builder.get_pipe(
             shard_dirs=self.cfg.test_clean_shard_path,
             shard_file_pattern=self.cfg.shard_file_pattern,
         )
-        self.test_dp_clean = self.test_pipe_builder.get_pipe(
+        self.test_dp_other = self.test_pipe_builder.get_pipe(
             shard_dirs=self.cfg.test_other_shard_path,
             shard_file_pattern=self.cfg.shard_file_pattern,
         )
@@ -173,13 +231,11 @@ class LibriSpeechDataModule(LightningDataModule):
         return self.train_pipe_builder.wrap_pipe(self.train_dp)
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
-        return [
-            self.val_pipe_builder.wrap_pipe(self.val_dp_clean),
-            self.val_pipe_builder.wrap_pipe(self.val_dp_other),
-        ]
+        return self.val_pipe_builder.wrap_pipe(self.val_dp_clean)
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
         return [
+            self.val_pipe_builder.wrap_pipe(self.val_dp_other),
             self.test_pipe_builder.wrap_pipe(self.test_dp_clean),
             self.test_pipe_builder.wrap_pipe(self.test_dp_other),
         ]

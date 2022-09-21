@@ -1,38 +1,14 @@
-# instantiate the x-vector network lightning module config object
-_target_: src.pl_modules.speaker.Wav2vec2SpeakerRecognitionModuleConfig
+_target_: src.networks.wav2vec2.w2v2_speaker.Wav2vec2ForSpeakerRecognitionConfig
 
-# pretrained weights of wav2vec model
-wav2vec_huggingface_id: "facebook/wav2vec2-base"
-
-# whether to use reset the pretrained weights
-# and start from a fresh initialization
+# settings for wav2vec2 architecture
+huggingface_id: "facebook/wav2vec2-base"
 reset_weights: false
 
-# whether to freeze the feature encoder part
-# of the network for the whole training run
-completely_freeze_feature_extractor: true
-
-# initially freeze wav2vec model
-wav2vec_initially_frozen: false
-
-# number of steps before the wav2vec model is unfrozen
-# (if initially frozen at all)
-# if set to null, wav2vec will never be unfrozen
-num_frozen_steps: 10000
-
-# which type of statistical pooling to use
-stat_pooling_type: "first+cls"
-use_cosine_linear: true  # this assumes AAM softmax loss
-
-# options for shuffling sequence (before, or after rel. pos. emd.)
-shuffling_location: null  # one of 'before', 'after', 'after+in_encoder', or 'None'
-shuffling_std: 1
-
-# optional explicit overwrite of embedding size and/or num speakers
-# (e.g if you need to load finetuned weights but want to experiment with another
-# pooling type in the evaluation or test on a dataset with different num speakers)
-explicit_stat_pool_embedding_size: null
-explicit_num_speakers: null
+# freeze logic
+freeze_cnn: true
+freeze_transformer: true  # this also freezes projector and rel. pos. emb
+num_steps_freeze_cnn: null # so always
+num_steps_freeze_transformer: 10_000
 
 # if enabled, gradient checkpointing slows down iteration speed but saves memory
 use_gradient_checkpointing: true

@@ -8,7 +8,6 @@
 import torch as t
 import torch.nn.functional as F
 
-
 ################################################################################
 # wrap around PyTorch cross-entropy loss implementation
 
