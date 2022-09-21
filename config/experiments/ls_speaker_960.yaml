@@ -16,6 +16,11 @@ trainer:
   val_check_interval: 5000
   precision: 16
 
+data:
+  speaker_datapipe:
+    train_dp:
+      batch_size: 64
+
 optim:
   algo:
     lr: 1e-5
