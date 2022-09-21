@@ -1,0 +1,3 @@
+_target_: src.optim.loss.ctc_loss.CtcLoss
+
+ctc_blank_idx: 0

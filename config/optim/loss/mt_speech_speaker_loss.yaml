@@ -1,0 +1,25 @@
+_target_: src.optim.loss.mt_speech_speaker_loss.MtSpeechAndSpeakerLoss
+
+# if True, use CE loss for speaker recognition, otherwise AAM loss
+use_cross_entropy: true  # ignore aam_scale and aam_margin values if true
+
+# settings for AAM loss (if used)
+aam_margin: 0.2
+aam_scale: 30
+
+# settings for CTC loss
+ctc_blank_idx: 0
+
+# enable dynamic scaling (equalizes the two losses by
+# scaling it with a constant determined at each time step)
+# methods are 'min, 'max', 'dwa', 'static', or null (no scaling)
+scale_method: min
+
+# settings for DWA scaling (if scale_method=dwa)
+dwa_temperature: 2
+dwa_weight_sum: 1
+dwa_use_average_loss: true
+dwa_average_loss_window: 5
+
+# weighting between the two loss functions (if scale_method=static)
+static_speech_weight: 0.5  # static_speaker_weight will be 1 - static_speech_weight

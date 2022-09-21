@@ -1,34 +1,23 @@
 defaults:
   - _self_
   - callbacks: speaker_default
-  - data: voxceleb2
-  - speaker/pipeline: base_wav_chunked
-  - speaker/dataloader: speaker
-  - network: speaker_wav2vec2_fc
-  - network/regularisation: wav2vec2_default_asr
-  - optim/algo: adam
-  - optim/schedule: constant
-  - optim/loss: cross_entropy
-  - trainer: trainer
-
-# root directory with ssubfolders containing the canonical dataset(s)
-data_folder: ${oc.env:DATA_FOLDER}
-
-# directory for temporary storage
-temp_folder: ${oc.env:TEMP_FOLDER}
+  - data/module: librispeech_speaker
+  - data/speaker_datapipe: default_datapipe
+  - data/speech_datapipe: default_datapipe
+  #  - speaker/pipeline: base_wav_chunked
+  #  - speaker/dataloader: speaker
+  #  - network: speaker_wav2vec2_fc
+  #  - network/regularisation: wav2vec2_default_asr
+  #  - optim/algo: adam
+  #  - optim/schedule: constant
+  #  - optim/loss: cross_entropy
+  - trainer: trainer_gpu
 
 # directory for slurm and hydra logs
 log_folder: ${oc.env:LOG_FOLDER}
 
 # random seed used by the experiment
 seed: 42133724
-
-# whether to do an LR range test with the model
-run_lr_range_test: False
-lr_range_iterations: 1000
-
-# verify model (run e.g summary and BatchGradientVerification)
-verify_model: false
 
 # whether to fit model
 fit_model: True
@@ -42,9 +31,6 @@ load_network_from_checkpoint: null
 # whether to log to wandb
 use_wandb: ${oc.decode:${oc.env:USE_WANDB}}
 
-# number of gpus to use
-gpus: ${oc.decode:${oc.env:NUM_GPUS}}
-
 # project name (useful for giving a name to log directories)
 project_name: general
 
@@ -56,16 +42,12 @@ experiment_name: ${random_name:}
 # of certain experiment
 tag: ${now:%Y-%m-%d}
 
-# whether to disable all functionality which can leak
-# identity
-anonymous_mode: true
-
 # config variables for hydra
 hydra:
   run:
     # set root output directory
-    dir: ${log_folder}/w2v2-mt/run/${now:%Y-%m-%d_%H-%M-%S}/${experiment_name}
+    dir: ${log_folder}/disjoint-mtl/run/${now:%Y-%m-%d_%H-%M-%S}/${experiment_name}
   sweep:
     # set root output directory
-    dir: ${log_folder}/w2v2-mt/sweep/${now:%Y-%m-%d_%H-%M-%S}
+    dir: ${log_folder}/disjoint-mtl/sweep/${now:%Y-%m-%d_%H-%M-%S}
     subdir: ${experiment_name}

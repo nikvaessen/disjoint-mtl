@@ -16,7 +16,8 @@ from omegaconf import DictConfig, OmegaConf
 from src.util.hydra_resolvers import (
     division_resolver,
     integer_division_resolver,
-    random_uuid, random_experiment_id,
+    random_uuid,
+    random_experiment_id,
 )
 
 ################################################################################

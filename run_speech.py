@@ -50,6 +50,7 @@ if __name__ == "__main__":
     load_dotenv()
 
     env_var = os.environ
+
     if "SLURM_ARRAY_TASK_ID" in env_var:
         job_id = int(env_var["SLURM_ARRAY_TASK_ID"])
         sleep_sec = 10 * int(job_id)

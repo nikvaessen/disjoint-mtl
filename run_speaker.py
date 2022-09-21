@@ -33,7 +33,7 @@ OmegaConf.register_new_resolver("random_name", random_experiment_id)
 # wrap around main hydra script
 
 
-@hydra.main(config_path="config", config_name="train_speaker")
+@hydra.main(config_path="config", config_name="train_speaker", version_base="1.2")
 def run(cfg: DictConfig):
     # we import here such that tab-completion in bash
     # does not need to import everything (which slows it down
@@ -50,6 +50,7 @@ if __name__ == "__main__":
     load_dotenv()
 
     env_var = os.environ
+
     if "SLURM_ARRAY_TASK_ID" in env_var:
         job_id = int(env_var["SLURM_ARRAY_TASK_ID"])
         sleep_sec = 10 * int(job_id)

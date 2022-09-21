@@ -1,0 +1,31 @@
+# instantiate the x-vector network lightning module config object
+_target_: src.pl_modules.speech.Wav2vec2SpeechRecognitionModuleConfig
+
+# pretrained weights of wav2vec model
+wav2vec_huggingface_id: "facebook/wav2vec2-base"
+
+# whether to use reset the pretrained weights
+# and start from a fresh initialization
+reset_weights: false
+
+# whether to freeze the feature encoder part
+# of the network for the whole training run
+completely_freeze_feature_extractor: true
+
+# initially freeze wav2vec model
+wav2vec_initially_frozen: true
+
+# number of steps before the wav2vec model is unfrozen
+# (if initially frozen at all)
+# if set to null, wav2vec will never be unfrozen
+num_frozen_steps: 10_000
+
+# if enabled, gradient checkpointing slows down iteration speed but saves memory
+use_gradient_checkpointing: true
+
+# options for shuffling sequence (before, or after rel. pos. emd.)
+shuffling_location: null  # one of 'before', 'after', 'after+in_encoder', or 'None'
+shuffling_std: 1
+
+# whether to extract the mean embedding from the sequence
+analyze_subtract_mean_embedding: False

@@ -40,7 +40,7 @@ test_other_trial_path: ${oc.env:LIBRISPEECH_DIR}/meta/trials_test_other.txt
 train_set_mode: "960h"
 
 # which data pipes to use
-task_mode: speaker  # 'speech', 'speaker' or 'mtl'
+task_mode: speech  # 'speech', 'speaker' or 'mtl'
 
 
 
