@@ -26,13 +26,13 @@ class RamMemoryMonitor(pl.Callback):
         self.batches = 0
 
     def on_train_batch_end(
-            self,
-            trainer: "pl.Trainer",
-            pl_module: "pl.LightningModule",
-            outputs: STEP_OUTPUT,
-            batch: Any,
-            batch_idx: int,
-            unused: Optional[int] = 0,
+        self,
+        trainer: "pl.Trainer",
+        pl_module: "pl.LightningModule",
+        outputs: STEP_OUTPUT,
+        batch: Any,
+        batch_idx: int,
+        unused: Optional[int] = 0,
     ) -> None:
         self.batches += 1
 

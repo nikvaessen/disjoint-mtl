@@ -26,25 +26,25 @@ class TriStageLearningRateLambdaLRFunction:
         return 0 <= ratio <= 1
 
     def __init__(
-            self,
-            max_steps: int,
-            warmup_stage_ratio: float,
-            constant_stage_ratio: float,
-            decay_stage_ratio: float,
-            initial_lr: float,
-            base_lr: float,
-            final_lr: float,
+        self,
+        max_steps: int,
+        warmup_stage_ratio: float,
+        constant_stage_ratio: float,
+        decay_stage_ratio: float,
+        initial_lr: float,
+        base_lr: float,
+        final_lr: float,
     ):
         if not (
-                self.is_valid_ratio(warmup_stage_ratio)
-                and self.is_valid_ratio(constant_stage_ratio)
-                and self.is_valid_ratio(decay_stage_ratio)
+            self.is_valid_ratio(warmup_stage_ratio)
+            and self.is_valid_ratio(constant_stage_ratio)
+            and self.is_valid_ratio(decay_stage_ratio)
         ):
             raise ValueError()
 
         if (
-                abs((warmup_stage_ratio + constant_stage_ratio + decay_stage_ratio) - 1)
-                >= 1e-9
+            abs((warmup_stage_ratio + constant_stage_ratio + decay_stage_ratio) - 1)
+            >= 1e-9
         ):
             raise ValueError("stage ratio's need to add up to 1")
 
@@ -92,7 +92,7 @@ class TriStageLearningRateLambdaLRFunction:
         elif step_count <= self.max_steps:
             desired_lr = self.decay_stage_space[
                 step_count - (self.warmup_stage_steps + self.constant_stage_steps)
-                ]
+            ]
         else:
             desired_lr = self.final_lr
 

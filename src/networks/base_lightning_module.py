@@ -25,9 +25,9 @@ log = logging.getLogger(__name__)
 
 class BaseLightningModule(pl.LightningModule):
     def __init__(
-            self,
-            root_hydra_config: DictConfig,
-            loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
+        self,
+        root_hydra_config: DictConfig,
+        loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
     ):
         super().__init__()
 

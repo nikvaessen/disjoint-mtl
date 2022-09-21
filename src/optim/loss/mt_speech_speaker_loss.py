@@ -25,19 +25,19 @@ from src.optim.loss.mt_weighting import (
 
 class MtSpeechAndSpeakerLoss(nn.Module):
     def __init__(
-            self,
-            use_cross_entropy: bool = True,  # ignore aam_scale and aam_margin values if true
-            aam_margin: Optional[float] = 0.3,
-            aam_scale: Optional[float] = 15,
-            ctc_blank_idx: int = 0,
-            scale_method: Optional[str] = None,  # one of 'min', 'max', 'static', 'dwa'
-            static_speech_weight: Optional[
-                float
-            ] = 0.5,  # and 1-static_speech_weight for static_speaker_weight
-            dwa_temperature: Optional[float] = 1,
-            dwa_weight_sum: Optional[float] = 1,
-            dwa_use_average_loss: Optional[bool] = True,
-            dwa_average_loss_window: Optional[int] = 10,
+        self,
+        use_cross_entropy: bool = True,  # ignore aam_scale and aam_margin values if true
+        aam_margin: Optional[float] = 0.3,
+        aam_scale: Optional[float] = 15,
+        ctc_blank_idx: int = 0,
+        scale_method: Optional[str] = None,  # one of 'min', 'max', 'static', 'dwa'
+        static_speech_weight: Optional[
+            float
+        ] = 0.5,  # and 1-static_speech_weight for static_speaker_weight
+        dwa_temperature: Optional[float] = 1,
+        dwa_weight_sum: Optional[float] = 1,
+        dwa_use_average_loss: Optional[bool] = True,
+        dwa_average_loss_window: Optional[int] = 10,
     ):
 
         super().__init__()
@@ -76,13 +76,13 @@ class MtSpeechAndSpeakerLoss(nn.Module):
             )
 
     def forward(
-            self,
-            speech_predictions: t.Tensor,
-            speech_prediction_lengths: List[int],
-            speech_ground_truths: t.Tensor,
-            speech_ground_truth_lengths: List[int],
-            speaker_logits: t.Tensor,
-            speaker_labels: t.Tensor,
+        self,
+        speech_predictions: t.Tensor,
+        speech_prediction_lengths: List[int],
+        speech_ground_truths: t.Tensor,
+        speech_ground_truth_lengths: List[int],
+        speaker_logits: t.Tensor,
+        speaker_labels: t.Tensor,
     ):
         speech_loss_value = self.speech_loss(
             predictions=speech_predictions,

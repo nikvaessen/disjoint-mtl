@@ -24,11 +24,11 @@ class CtcLoss(nn.Module):
         self.blank_idx = ctc_blank_idx
 
     def forward(
-            self,
-            predictions: t.Tensor,
-            prediction_lengths: List[int],
-            ground_truths: t.Tensor,
-            ground_truth_lengths: List[int],
+        self,
+        predictions: t.Tensor,
+        prediction_lengths: List[int],
+        ground_truths: t.Tensor,
+        ground_truth_lengths: List[int],
     ):
         original_device = predictions.device
         assert original_device == predictions.device == ground_truths.device

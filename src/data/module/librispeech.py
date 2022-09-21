@@ -79,10 +79,10 @@ class LibriSpeechDataModuleConfig(CastingConfig):
 
 class LibriSpeechDataModule(LightningDataModule):
     def __init__(
-            self,
-            cfg: LibriSpeechDataModuleConfig,
-            speech_pipe_builders: Tuple[DataPipeBuilder, DataPipeBuilder, DataPipeBuilder],
-            speaker_pipe_builders: Tuple[DataPipeBuilder, DataPipeBuilder, DataPipeBuilder],
+        self,
+        cfg: LibriSpeechDataModuleConfig,
+        speech_pipe_builders: Tuple[DataPipeBuilder, DataPipeBuilder, DataPipeBuilder],
+        speaker_pipe_builders: Tuple[DataPipeBuilder, DataPipeBuilder, DataPipeBuilder],
     ):
         super(LibriSpeechDataModule, self).__init__()
 

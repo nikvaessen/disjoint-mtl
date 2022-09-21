@@ -36,13 +36,13 @@ log = logging.getLogger(__name__)
 
 class SpeakerRecognitionLightningModule(BaseLightningModule):
     def __init__(
-            self,
-            root_hydra_config: DictConfig,
-            loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
-            num_speakers: int,
-            validation_pairs: List[SpeakerTrial],
-            test_pairs: List[List[SpeakerTrial]],
-            test_names: List[str],
+        self,
+        root_hydra_config: DictConfig,
+        loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
+        num_speakers: int,
+        validation_pairs: List[SpeakerTrial],
+        test_pairs: List[List[SpeakerTrial]],
+        test_names: List[str],
     ):
         super().__init__(root_hydra_config, loss_fn_constructor)
 
@@ -87,10 +87,10 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
         return embedding, prediction
 
     def training_step(
-            self,
-            batch: SpeakerRecognitionBatch,
-            batch_idx: int,
-            optimized_idx: Optional[int] = None,
+        self,
+        batch: SpeakerRecognitionBatch,
+        batch_idx: int,
+        optimized_idx: Optional[int] = None,
     ):
         assert isinstance(batch, SpeakerRecognitionBatch)
 
@@ -137,10 +137,10 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
             self.metric_train_loss.reset()
 
     def validation_step(
-            self,
-            batch: SpeakerRecognitionBatch,
-            batch_idx: int,
-            dataloader_idx: Optional[int] = None,
+        self,
+        batch: SpeakerRecognitionBatch,
+        batch_idx: int,
+        dataloader_idx: Optional[int] = None,
     ):
         assert isinstance(batch, SpeakerRecognitionBatch)
 
@@ -182,10 +182,10 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
         self.metric_valid_acc.reset()
 
     def test_step(
-            self,
-            batch: SpeakerRecognitionBatch,
-            batch_idx: int,
-            dataloader_idx: Optional[int] = None,
+        self,
+        batch: SpeakerRecognitionBatch,
+        batch_idx: int,
+        dataloader_idx: Optional[int] = None,
     ):
         assert isinstance(batch, SpeakerRecognitionBatch)
 
@@ -198,8 +198,8 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
         embedding = self.compute_speaker_embedding(audio_input)
 
         if (
-                len(embedding.shape) == 1
-                and embedding.shape[0] == self.speaker_embedding_size
+            len(embedding.shape) == 1
+            and embedding.shape[0] == self.speaker_embedding_size
         ):
             embedding = embedding[None, :]
 
@@ -238,10 +238,10 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
 
 
 def evaluate_embeddings(
-        evaluator: SpeakerRecognitionEvaluator,
-        outputs: List[dict],
-        pairs: List[SpeakerTrial],
-        print_info: bool,
+    evaluator: SpeakerRecognitionEvaluator,
+    outputs: List[dict],
+    pairs: List[SpeakerTrial],
+    print_info: bool,
 ):
     # outputs is a list of dictionary with at least keys:
     # 'embedding' -> tensor with shape [BATCH_SIZE, EMBEDDING_SIZE]

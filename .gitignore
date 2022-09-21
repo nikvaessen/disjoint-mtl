@@ -32,3 +32,4 @@ tmp/
 /analysis/lightning_logs/
 /mtl_*/data*/
 /mtl_*/lightning_logs/
+/wandb/

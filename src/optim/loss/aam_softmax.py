@@ -22,9 +22,9 @@ import math
 
 class AngularAdditiveMarginSoftMaxLoss(t.nn.Module):
     def __init__(
-            self,
-            margin: float = 0.3,
-            scale: float = 15,
+        self,
+        margin: float = 0.3,
+        scale: float = 15,
     ):
         super(AngularAdditiveMarginSoftMaxLoss, self).__init__()
 

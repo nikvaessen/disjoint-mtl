@@ -41,12 +41,12 @@ class InputMonitor(Callback):
         self.logged_test_batch = False
 
     def on_train_batch_start(
-            self,
-            trainer: Trainer,
-            pl_module: LightningModule,
-            batch: Any,
-            batch_idx: int,
-            unused: Optional[int] = 0,
+        self,
+        trainer: Trainer,
+        pl_module: LightningModule,
+        batch: Any,
+        batch_idx: int,
+        unused: Optional[int] = 0,
     ) -> None:
         if self.logged_train_batch:
             return
@@ -55,12 +55,12 @@ class InputMonitor(Callback):
         self.logged_train_batch = True
 
     def on_validation_batch_start(
-            self,
-            trainer,
-            pl_module: LightningModule,
-            batch: Any,
-            batch_idx: int,
-            dataloader_idx: int,
+        self,
+        trainer,
+        pl_module: LightningModule,
+        batch: Any,
+        batch_idx: int,
+        dataloader_idx: int,
     ) -> None:
         if self.logged_val_batch:
             return
@@ -69,12 +69,12 @@ class InputMonitor(Callback):
         self.logged_val_batch = True
 
     def on_test_batch_start(
-            self,
-            trainer,
-            pl_module: LightningModule,
-            batch: Any,
-            batch_idx: int,
-            dataloader_idx: int,
+        self,
+        trainer,
+        pl_module: LightningModule,
+        batch: Any,
+        batch_idx: int,
+        dataloader_idx: int,
     ) -> None:
         if self.logged_test_batch:
             return
@@ -84,11 +84,11 @@ class InputMonitor(Callback):
 
 
 def debug_log_batch(
-        batch: SpeakerClassificationDataBatch,
-        save_folder: pathlib.Path = pathlib.Path.cwd() / "debug_batch",
-        name: Optional[str] = None,
-        additional_tensors: Optional[Dict[str, torch.Tensor]] = None,
-        write_whole_tensor_to_file: bool = False,
+    batch: SpeakerClassificationDataBatch,
+    save_folder: pathlib.Path = pathlib.Path.cwd() / "debug_batch",
+    name: Optional[str] = None,
+    additional_tensors: Optional[Dict[str, torch.Tensor]] = None,
+    write_whole_tensor_to_file: bool = False,
 ):
     if type(batch) not in InputMonitor.supported_batches:
         raise ValueError(
@@ -137,7 +137,7 @@ def debug_log_batch(
         )
 
         for idx, (transformed_tensor, debug_writer) in enumerate(
-                side_info.pipeline_progress
+            side_info.pipeline_progress
         ):
             debug_writer.write(transformed_tensor, side_info_dir, idx)
 

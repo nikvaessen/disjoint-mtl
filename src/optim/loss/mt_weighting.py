@@ -84,12 +84,12 @@ class DynamicWeightAveraging(nn.Module):
     # https://arxiv.org/pdf/1803.10704.pdf
 
     def __init__(
-            self,
-            num_losses: int,
-            use_average_loss: bool = True,
-            average_loss_window: int = 5,
-            weight_sum: float = 1.0,
-            temperature: float = 2.0,
+        self,
+        num_losses: int,
+        use_average_loss: bool = True,
+        average_loss_window: int = 5,
+        weight_sum: float = 1.0,
+        temperature: float = 2.0,
     ):
         super().__init__()
         self.num_losses = num_losses
