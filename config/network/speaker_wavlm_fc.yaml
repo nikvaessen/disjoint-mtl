@@ -1,0 +1,14 @@
+_target_: src.networks.wavlm.wavlm_speaker.WavLMForSpeakerRecognitionConfig
+
+# settings for wav2vec2 architecture
+huggingface_id: "microsoft/wavlm-base-plus"
+reset_weights: false
+
+# freeze logic
+freeze_cnn: true
+freeze_transformer: true  # this also freezes projector and rel. pos. emb
+num_steps_freeze_cnn: null # so always
+num_steps_freeze_transformer: 10_000
+
+# if enabled, gradient checkpointing slows down iteration speed but saves memory
+use_gradient_checkpointing: true

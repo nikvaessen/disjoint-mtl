@@ -1,6 +1,6 @@
 ########################################################################################
 #
-# Implement wav2vec2 as a speaker recognition network
+# Implement WavLM as a speaker recognition network.
 #
 # Author(s): Nik Vaessen
 ########################################################################################
@@ -11,7 +11,7 @@ from typing import Callable, List, Optional
 import torch as t
 
 from omegaconf import DictConfig
-from transformers import Wav2Vec2Model
+from transformers import WavLMModel
 
 from data_utility.pipe.types import SpeakerTrial
 from src.networks.speaker_recognition_module import SpeakerRecognitionLightningModule
@@ -23,7 +23,7 @@ from src.util.torch import freeze_module, unfreeze_module
 
 
 @dataclass
-class Wav2vec2ForSpeakerRecognitionConfig:
+class WavLMForSpeakerRecognitionConfig:
     # settings for wav2vec2 architecture
     huggingface_id: str
     reset_weights: bool
@@ -46,7 +46,7 @@ class Wav2vec2ForSpeakerRecognitionConfig:
 # complete network
 
 
-class Wav2vec2ForSpeakerRecognition(SpeakerRecognitionLightningModule):
+class WavLMForSpeakerRecognition(SpeakerRecognitionLightningModule):
     def __init__(
         self,
         root_hydra_config: DictConfig,
@@ -55,7 +55,7 @@ class Wav2vec2ForSpeakerRecognition(SpeakerRecognitionLightningModule):
         validation_pairs: List[SpeakerTrial],
         test_pairs: List[List[SpeakerTrial]],
         test_names: List[str],
-        cfg: Wav2vec2ForSpeakerRecognitionConfig,
+        cfg: WavLMForSpeakerRecognitionConfig,
     ):
         super().__init__(
             root_hydra_config,
@@ -68,12 +68,10 @@ class Wav2vec2ForSpeakerRecognition(SpeakerRecognitionLightningModule):
 
         self.cfg = cfg
 
-        self.wav2vec2: Wav2Vec2Model = Wav2Vec2Model.from_pretrained(
-            self.cfg.huggingface_id
-        )
+        self.wavlm: WavLMModel = WavLMModel.from_pretrained(self.cfg.huggingface_id)
 
         if self.cfg.use_gradient_checkpointing:
-            self.wav2vec2.gradient_checkpointing_enable()
+            self.wavlm.gradient_checkpointing_enable()
 
         if "base" in self.cfg.huggingface_id:
             self.embedding_size = 768
@@ -91,7 +89,7 @@ class Wav2vec2ForSpeakerRecognition(SpeakerRecognitionLightningModule):
         return self.embedding_size
 
     def compute_speaker_embedding(self, input_tensor: t.Tensor) -> t.Tensor:
-        sequence = self.wav2vec2(input_tensor).last_hidden_state
+        sequence = self.wavlm(input_tensor).last_hidden_state
         embedding = t.mean(sequence, dim=1)
 
         return embedding
@@ -103,16 +101,16 @@ class Wav2vec2ForSpeakerRecognition(SpeakerRecognitionLightningModule):
 
     def on_train_start(self) -> None:
         if self.cfg.freeze_cnn:
-            freeze_module(self.wav2vec2.feature_extractor)
+            freeze_module(self.wavlm.feature_extractor)
 
         if self.cfg.freeze_transformer:
-            freeze_module(self.wav2vec2.feature_projection)
-            freeze_module(self.wav2vec2.encoder)
+            freeze_module(self.wavlm.feature_projection)
+            freeze_module(self.wavlm.encoder)
 
-            if self.wav2vec2.masked_spec_embed is not None:
-                freeze_module(self.wav2vec2.masked_spec_embed)
-            if self.wav2vec2.adapter is not None:
-                freeze_module(self.wav2vec2.adapter)
+            if self.wavlm.masked_spec_embed is not None:
+                freeze_module(self.wavlm.masked_spec_embed)
+            if self.wavlm.adapter is not None:
+                freeze_module(self.wavlm.adapter)
 
         self._num_steps_frozen = 0
 
@@ -123,16 +121,16 @@ class Wav2vec2ForSpeakerRecognition(SpeakerRecognitionLightningModule):
             self.cfg.num_steps_freeze_cnn is not None
             and self._num_steps_frozen == self.cfg.num_steps_freeze_cnn
         ):
-            unfreeze_module(self.wav2vec2.feature_extractor)
+            unfreeze_module(self.wavlm.feature_extractor)
 
         if (
             self.cfg.num_steps_freeze_transformer is not None
             and self._num_steps_frozen == self.cfg.num_steps_freeze_transformer
         ):
-            unfreeze_module(self.wav2vec2.feature_projection)
-            unfreeze_module(self.wav2vec2.encoder)
+            unfreeze_module(self.wavlm.feature_projection)
+            unfreeze_module(self.wavlm.encoder)
 
-            if self.wav2vec2.masked_spec_embed is not None:
-                unfreeze_module(self.wav2vec2.masked_spec_embed)
-            if self.wav2vec2.adapter is not None:
-                unfreeze_module(self.wav2vec2.adapter)
+            if self.wavlm.masked_spec_embed is not None:
+                unfreeze_module(self.wavlm.masked_spec_embed)
+            if self.wavlm.adapter is not None:
+                unfreeze_module(self.wavlm.adapter)

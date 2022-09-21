@@ -35,6 +35,10 @@ from src.networks.wav2vec2.w2v2_speaker import (
     Wav2vec2ForSpeakerRecognitionConfig,
     Wav2vec2ForSpeakerRecognition,
 )
+from src.networks.wavlm.wavlm_speaker import (
+    WavLMForSpeakerRecognitionConfig,
+    WavLMForSpeakerRecognition,
+)
 from src.util.system import get_git_revision_hash
 
 log = logging.getLogger(__name__)
@@ -93,10 +97,12 @@ def construct_data_module(cfg: DictConfig):
 
 
 def construct_speaker_recognition_module(
-        cfg: DictConfig,
-        network_cfg: Union[Wav2vec2ForSpeakerRecognitionConfig],
-        dm: Union[LibriSpeechDataModule],
-        loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
+    cfg: DictConfig,
+    network_cfg: Union[
+        Wav2vec2ForSpeakerRecognitionConfig, WavLMForSpeakerRecognitionConfig
+    ],
+    dm: Union[LibriSpeechDataModule],
+    loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
 ):
     # every speaker recognition network needs to be given these variables
     # for training purposes
@@ -108,6 +114,8 @@ def construct_speaker_recognition_module(
     # get init function based on config type
     if isinstance(network_cfg, Wav2vec2ForSpeakerRecognitionConfig):
         network_class = Wav2vec2ForSpeakerRecognition
+    elif isinstance(network_cfg, WavLMForSpeakerRecognitionConfig):
+        network_class = WavLMForSpeakerRecognition
     else:
         raise ValueError(f"cannot load network from {network_cfg}")
 
@@ -143,8 +151,8 @@ def init_model(cfg: DictConfig, network_class, kwargs: Dict):
 
 
 def construct_network_module(
-        cfg: DictConfig,
-        dm: Union[LibriSpeechDataModule],
+    cfg: DictConfig,
+    dm: Union[LibriSpeechDataModule],
 ):
     # load loss function
     def loss_fn_constructor():
@@ -157,6 +165,10 @@ def construct_network_module(
     network_cfg = instantiate(cfg.network)
 
     if isinstance(network_cfg, Wav2vec2ForSpeakerRecognitionConfig):
+        network = construct_speaker_recognition_module(
+            cfg, network_cfg, dm, loss_fn_constructor
+        )
+    elif isinstance(network_cfg, WavLMForSpeakerRecognitionConfig):
         network = construct_speaker_recognition_module(
             cfg, network_cfg, dm, loss_fn_constructor
         )

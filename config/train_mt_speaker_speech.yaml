@@ -40,7 +40,7 @@ use_wandb: ${oc.decode:${oc.env:USE_WANDB}}
 gpus: ${oc.decode:${oc.env:NUM_GPUS}}
 
 # project name (useful for giving a name to log directories)
-project_name: general
+project_name: disjoint-mtl-mtl
 
 # experiment name
 # (:) indicates it needs to be resolved

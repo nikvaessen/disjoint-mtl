@@ -29,7 +29,7 @@ load_network_from_checkpoint: null
 use_wandb: ${oc.decode:${oc.env:USE_WANDB}}
 
 # project name (useful for giving a name to log directories)
-project_name: general
+project_name: disjoint-mtl-speaker
 
 # experiment name
 # (:) indicates it needs to be resolved
