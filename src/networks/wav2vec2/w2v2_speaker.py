@@ -86,6 +86,11 @@ class Wav2vec2ForSpeakerRecognition(SpeakerRecognitionLightningModule):
             in_features=self.embedding_size, out_features=num_speakers
         )
 
+        # freeze logic
+        self._freeze_cnn = self.cfg.freeze_cnn
+        self._freeze_transformer = self.cfg.freeze_transformer
+        self._num_steps_frozen = 0
+
     @property
     def speaker_embedding_size(self):
         return self.embedding_size
@@ -102,10 +107,10 @@ class Wav2vec2ForSpeakerRecognition(SpeakerRecognitionLightningModule):
         return logits
 
     def on_train_start(self) -> None:
-        if self.cfg.freeze_cnn:
+        if self._freeze_cnn:
             freeze_module(self.wav2vec2.feature_extractor)
 
-        if self.cfg.freeze_transformer:
+        if self._freeze_transformer:
             freeze_module(self.wav2vec2.feature_projection)
             freeze_module(self.wav2vec2.encoder)
 
@@ -120,15 +125,20 @@ class Wav2vec2ForSpeakerRecognition(SpeakerRecognitionLightningModule):
         self._num_steps_frozen = +1
 
         if (
-            self.cfg.num_steps_freeze_cnn is not None
-            and self._num_steps_frozen == self.cfg.num_steps_freeze_cnn
+            self._freeze_cnn
+            and self.cfg.num_steps_freeze_cnn is not None
+            and self._num_steps_frozen >= self.cfg.num_steps_freeze_cnn
         ):
+            self._freeze_cnn = False
             unfreeze_module(self.wav2vec2.feature_extractor)
 
         if (
-            self.cfg.num_steps_freeze_transformer is not None
-            and self._num_steps_frozen == self.cfg.num_steps_freeze_transformer
+            self._freeze_transformer
+            and self.cfg.num_steps_freeze_transformer is not None
+            and self._num_steps_frozen >= self.cfg.num_steps_freeze_transformer
         ):
+            self._freeze_transformer = False
+
             unfreeze_module(self.wav2vec2.feature_projection)
             unfreeze_module(self.wav2vec2.encoder)
 
