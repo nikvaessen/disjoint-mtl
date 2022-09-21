@@ -9,9 +9,9 @@ scheduler:
     warmup_stage_ratio: 0.1
     constant_stage_ratio: 0.4
     decay_stage_ratio: 0.5
-    initial_lr: 5e-6
+    initial_lr: 1e-7
     base_lr: ${optim.algo.lr}
-    final_lr: 5e-6
+    final_lr: 1e-7
 
   # epoch number after which to not do any steps any more. '-1' implies never stop
   last_epoch: -1
