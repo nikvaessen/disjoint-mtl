@@ -56,3 +56,5 @@ hydra:
     # set root output directory
     dir: ${log_folder}/disjoint-mtl/sweep/${now:%Y-%m-%d_%H-%M-%S}
     subdir: ${experiment_name}
+  job:
+    chdir: true

@@ -1,15 +1,15 @@
 # @package _global_
 
 defaults:
-  - override callbacks: speaker_default
-  - override data/module: librispeech_speaker
-  - override data/speaker_datapipe: default_datapipe
-  - override data/speech_datapipe: default_datapipe
-  - override network: speaker_wav2vec2_fc
-  - override optim/algo: adam
-  - override optim/schedule: tri_stage
-  - override optim/loss: aam_softmax
-  - override trainer: trainer_gpu
+  - override /callbacks: speaker_default
+  - override /data/module: librispeech_speaker
+  - override /data/speaker_datapipe: default_datapipe
+  - override /data/speech_datapipe: default_datapipe
+  - override /network: speaker_wav2vec2_fc
+  - override /optim/algo: adam
+  - override /optim/schedule: tri_stage
+  - override /optim/loss: aam_softmax
+  - override /trainer: trainer_gpu
 
 trainer:
   max_steps: 100_000
