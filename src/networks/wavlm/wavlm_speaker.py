@@ -13,7 +13,7 @@ import torch as t
 from omegaconf import DictConfig
 from transformers import WavLMModel
 
-from data_utility.pipe.containers import SpeakerTrial
+from data_utility.eval.speaker.evaluator import SpeakerTrial
 from src.networks.speaker_recognition_module import SpeakerRecognitionLightningModule
 from src.util.torch import freeze_module, unfreeze_module
 
@@ -52,7 +52,6 @@ class WavLMForSpeakerRecognition(SpeakerRecognitionLightningModule):
         root_hydra_config: DictConfig,
         loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
         num_speakers: int,
-        validation_pairs: List[SpeakerTrial],
         test_pairs: List[List[SpeakerTrial]],
         test_names: List[str],
         cfg: WavLMForSpeakerRecognitionConfig,
@@ -61,7 +60,6 @@ class WavLMForSpeakerRecognition(SpeakerRecognitionLightningModule):
             root_hydra_config,
             loss_fn_constructor,
             num_speakers,
-            validation_pairs,
             test_pairs,
             test_names,
         )

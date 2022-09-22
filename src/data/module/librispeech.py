@@ -9,18 +9,17 @@ import json
 import pathlib
 
 from dataclasses import dataclass
-from functools import lru_cache
 from typing import Optional, Tuple, List
 
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.types import TRAIN_DATALOADERS, EVAL_DATALOADERS
 
+from data_utility.eval.speaker.evaluator import SpeakerTrial
 from data_utility.pipe.builder import (
     DataPipeBuilder,
     SpeakerRecognitionDataPipeBuilder,
     SpeechRecognitionDataPipeBuilder,
 )
-from data_utility.pipe.containers import SpeakerTrial
 from src.util.config_util import CastingConfig
 
 
@@ -35,11 +34,15 @@ class LibriSpeechDataModuleConfig(CastingConfig):
     train_c360_shard_path: pathlib.Path
     train_o500_shard_path: pathlib.Path
 
+    val_c100_shard_path: pathlib.Path
+    val_c360_shard_path: pathlib.Path
+    val_o500_shard_path: pathlib.Path
+
     train_disjoint_set1_shard_path: pathlib.Path
     train_disjoint_set2_shard_path: pathlib.Path
 
-    val_clean_shard_path: pathlib.Path
-    val_other_shard_path: pathlib.Path
+    dev_clean_shard_path: pathlib.Path
+    dev_other_shard_path: pathlib.Path
 
     test_clean_shard_path: pathlib.Path
     test_other_shard_path: pathlib.Path
@@ -108,8 +111,9 @@ class LibriSpeechDataModule(LightningDataModule):
 
         # init in setup()
         self.train_dp = None
-        self.val_dp_clean = None
-        self.val_dp_other = None
+        self.val_dp = None
+        self.dev_dp_clean = None
+        self.dev_dp_other = None
         self.test_dp_clean = None
         self.test_dp_other = None
 
@@ -162,13 +166,11 @@ class LibriSpeechDataModule(LightningDataModule):
     def get_num_train_speakers(self) -> int:
         return len(self._train_speakers_json()["speakers"])
 
-    def get_val_speaker_eval_list(self) -> List[SpeakerTrial]:
-        return SpeakerTrial.from_file(self.cfg.dev_clean_trial_path)
-
     def get_test_speaker_eval_list(self) -> List[List[SpeakerTrial]]:
         return [
             SpeakerTrial.from_file(f)
             for f in [
+                self.cfg.dev_clean_trial_path,
                 self.cfg.dev_other_trial_path,
                 self.cfg.test_clean_trial_path,
                 self.cfg.test_other_trial_path,
@@ -176,7 +178,7 @@ class LibriSpeechDataModule(LightningDataModule):
         ]
 
     def get_test_names(self):
-        return ["dev_other", "test_clean", "test_other"]
+        return ["dev_clean", "dev_other", "test_clean", "test_other"]
 
     def character_vocab(self):
         return len(self._character_vocab_json()["characters"])
@@ -208,14 +210,22 @@ class LibriSpeechDataModule(LightningDataModule):
             raise ValueError(f"unknown {self.cfg.train_set_mode=}")
 
         # val dp
-        self.val_dp_clean = self.val_pipe_builder.get_pipe(
-            shard_dirs=self.cfg.val_clean_shard_path,
+        self.val_dp = self.val_pipe_builder.get_pipe(
+            shard_dirs=[
+                self.cfg.val_c100_shard_path,
+                self.cfg.val_c360_shard_path,
+                self.cfg.val_o500_shard_path,
+            ],
             shard_file_pattern=self.cfg.shard_file_pattern,
         )
 
         # test dp
-        self.val_dp_other = self.test_pipe_builder.get_pipe(
-            shard_dirs=self.cfg.val_other_shard_path,
+        self.dev_dp_clean = self.test_pipe_builder.get_pipe(
+            shard_dirs=self.cfg.dev_clean_shard_path,
+            shard_file_pattern=self.cfg.shard_file_pattern,
+        )
+        self.dev_dp_other = self.test_pipe_builder.get_pipe(
+            shard_dirs=self.cfg.dev_other_shard_path,
             shard_file_pattern=self.cfg.shard_file_pattern,
         )
         self.test_dp_clean = self.test_pipe_builder.get_pipe(
@@ -231,11 +241,12 @@ class LibriSpeechDataModule(LightningDataModule):
         return self.train_pipe_builder.wrap_pipe(self.train_dp)
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
-        return self.val_pipe_builder.wrap_pipe(self.val_dp_clean)
+        return self.val_pipe_builder.wrap_pipe(self.val_dp)
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
         return [
-            self.val_pipe_builder.wrap_pipe(self.val_dp_other),
+            self.test_pipe_builder.wrap_pipe(self.dev_dp_clean),
+            self.test_pipe_builder.wrap_pipe(self.dev_dp_other),
             self.test_pipe_builder.wrap_pipe(self.test_dp_clean),
             self.test_pipe_builder.wrap_pipe(self.test_dp_other),
         ]

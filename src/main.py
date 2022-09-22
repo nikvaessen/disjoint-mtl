@@ -107,7 +107,6 @@ def construct_speaker_recognition_module(
     # every speaker recognition network needs to be given these variables
     # for training purposes
     num_speakers = dm.get_num_train_speakers()
-    validation_pairs = dm.get_val_speaker_eval_list()
     test_pairs = dm.get_test_speaker_eval_list()
     test_names = dm.get_test_names()
 
@@ -124,7 +123,6 @@ def construct_speaker_recognition_module(
         "root_hydra_config": cfg,
         "loss_fn_constructor": loss_fn_constructor,
         "num_speakers": num_speakers,
-        "validation_pairs": validation_pairs,
         "test_pairs": test_pairs,
         "test_names": test_names,
         "cfg": network_cfg,

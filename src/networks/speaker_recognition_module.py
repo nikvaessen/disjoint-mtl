@@ -16,14 +16,14 @@ import torch as t
 import torchmetrics
 
 from omegaconf import DictConfig
-from tqdm import tqdm
 
 from data_utility.eval.speaker.cosine_dist_evaluator import CosineDistanceEvaluator
 from data_utility.eval.speaker.evaluator import (
     SpeakerRecognitionEvaluator,
     EmbeddingSample,
+    SpeakerTrial,
 )
-from data_utility.pipe.containers import SpeakerTrial, SpeakerRecognitionBatch
+from data_utility.pipe.containers import SpeakerRecognitionBatch
 from src.networks.base_lightning_module import BaseLightningModule
 
 ################################################################################
@@ -40,7 +40,6 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
         root_hydra_config: DictConfig,
         loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
         num_speakers: int,
-        validation_pairs: List[SpeakerTrial],
         test_pairs: List[List[SpeakerTrial]],
         test_names: List[str],
     ):
@@ -48,7 +47,6 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
 
         # input arguments
         self.num_speakers = num_speakers
-        self.validation_pairs = validation_pairs
         self.test_pairs = test_pairs
         self.test_names = test_names
 
@@ -159,21 +157,9 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
         self.metric_valid_acc(prediction, label)
         self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
 
-        return_dict = {
-            "embedding": embedding.detach().to("cpu"),
-            "sample_id": sample_id,
-        }
-
-        return return_dict
-
     def validation_epoch_end(self, outputs: List[Any]) -> None:
-        results = evaluate_embeddings(
-            self.evaluator, outputs, self.validation_pairs, False
-        )
-
         self.log_dict(
             {
-                "val_eer": results["eer"],
                 "val_acc": self.metric_valid_acc.compute(),
             },
             on_epoch=True,
