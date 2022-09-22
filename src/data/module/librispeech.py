@@ -121,7 +121,7 @@ class LibriSpeechDataModule(LightningDataModule):
         with self.cfg.train_speaker_json.open("r") as f:
             return json.load(f)
 
-    def _val_speakers_json(self):
+    def _dev_speakers_json(self):
         with self.cfg.dev_speaker_json.open("r") as f:
             return json.load(f)
 
@@ -142,10 +142,11 @@ class LibriSpeechDataModule(LightningDataModule):
             self._train_speakers_json()["speaker_to_idx"]
         )
         self.val_pipe_builder.set_speaker_to_idx(
-            self._val_speakers_json()["speaker_to_idx"]
+            self._train_speakers_json()["speaker_to_idx"]
         )
         self.test_pipe_builder.set_speaker_to_idx(
-            self._test_speakers_json()["speaker_to_idx"]
+            self._dev_speakers_json()["speaker_to_idx"]
+            | self._test_speakers_json()["speaker_to_idx"]
         )
 
     def _set_character_to_idx(self):
