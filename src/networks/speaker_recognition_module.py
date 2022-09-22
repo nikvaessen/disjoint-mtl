@@ -23,7 +23,7 @@ from data_utility.eval.speaker.evaluator import (
     SpeakerRecognitionEvaluator,
     EmbeddingSample,
 )
-from data_utility.pipe.types import SpeakerTrial, SpeakerRecognitionBatch
+from data_utility.pipe.containers import SpeakerTrial, SpeakerRecognitionBatch
 from src.networks.base_lightning_module import BaseLightningModule
 
 ################################################################################

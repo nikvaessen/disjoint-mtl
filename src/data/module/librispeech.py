@@ -20,7 +20,7 @@ from data_utility.pipe.builder import (
     SpeakerRecognitionDataPipeBuilder,
     SpeechRecognitionDataPipeBuilder,
 )
-from data_utility.pipe.types import SpeakerTrial
+from data_utility.pipe.containers import SpeakerTrial
 from src.util.config_util import CastingConfig
 
 

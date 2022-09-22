@@ -13,7 +13,7 @@ import torch as t
 from omegaconf import DictConfig
 from transformers import Wav2Vec2Model
 
-from data_utility.pipe.types import SpeakerTrial
+from data_utility.pipe.containers import SpeakerTrial
 from src.networks.speaker_recognition_module import SpeakerRecognitionLightningModule
 from src.util.torch import freeze_module, unfreeze_module
 
