@@ -4,7 +4,7 @@ defaults:
   - data/module: librispeech_speaker
   - data/speaker_datapipe: default_datapipe
   - data/speech_datapipe: default_datapipe
-  - network: speaker_wav2vec2_fc
+  - network: speaker_wav2vec2_linear
   - optim/algo: adam
   - optim/schedule: constant
   - optim/loss: cross_entropy

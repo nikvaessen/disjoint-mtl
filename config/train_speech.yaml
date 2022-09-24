@@ -1,16 +1,14 @@
 defaults:
-  - _self_ 
-  - callbacks: speech_default
-  - data: librispeech
-  - speech/dataloader: speech
-  - speech/pipeline: base_wav
-  - speech/tokenizer: default
+  - _self_
+  - callbacks: speaker_default
+  - data/module: librispeech_speech
+  - data/speaker_datapipe: default_datapipe
+  - data/speech_datapipe: default_datapipe
   - network: speech_wav2vec2_fc
-  - network/regularisation: wav2vec2_default_asr
   - optim/algo: adam
-  - optim/schedule: constant
+  - optim/schedule: tri_stage
   - optim/loss: ctc
-  - trainer: trainer
+  - trainer: trainer_gpu
 
 # root directory with subfolders containing the canonical dataset(s)
 data_folder: ${oc.env:DATA_FOLDER}

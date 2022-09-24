@@ -5,7 +5,7 @@ defaults:
   - override /data/module: librispeech_speaker
   - override /data/speaker_datapipe: default_datapipe
   - override /data/speech_datapipe: default_datapipe
-  - override /network: speaker_wav2vec2_fc
+  - override /network: speaker_wav2vec2_linear
   - override /optim/algo: adam
   - override /optim/schedule: tri_stage
   - override /optim/loss: aam_softmax
@@ -20,6 +20,10 @@ data:
   speaker_datapipe:
     train_dp:
       batch_size: 64
+
+network:
+  head_cfg:
+    use_cosine_linear: true
 
 optim:
   algo:

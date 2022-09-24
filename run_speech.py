@@ -1,6 +1,6 @@
 ########################################################################################
 #
-# This run script encapsulates the training and evaluation of a automatic speaker
+# This run script encapsulates the training and evaluation of an automatic speech
 # recognition model defined by the hydra configuration.
 #
 # Author(s): Nik Vaessen
@@ -33,7 +33,7 @@ OmegaConf.register_new_resolver("random_name", random_experiment_id)
 # wrap around main hydra script
 
 
-@hydra.main(config_path="config", config_name="train_speech")
+@hydra.main(config_path="config", config_name="train_speech", version_base="1.2")
 def run(cfg: DictConfig):
     # we import here such that tab-completion in bash
     # does not need to import everything (which slows it down

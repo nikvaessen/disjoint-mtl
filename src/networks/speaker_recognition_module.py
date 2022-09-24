@@ -144,7 +144,6 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
 
         audio_input = batch.audio_tensor
         label = batch.id_tensor
-        sample_id = batch.keys
 
         embedding = self.compute_speaker_embedding(audio_input)
 

@@ -15,7 +15,7 @@ from transformers import WavLMModel
 
 from data_utility.eval.speaker.evaluator import SpeakerTrial
 from src.networks.speaker_recognition_module import SpeakerRecognitionLightningModule
-from src.util.torch import freeze_module, unfreeze_module
+from src.util.freeze import FreezeManager
 
 
 ########################################################################################
@@ -36,10 +36,6 @@ class WavLMForSpeakerRecognitionConfig:
     freeze_transformer: bool  # this also freezes projector and rel. pos. emb
     num_steps_freeze_cnn: Optional[int]
     num_steps_freeze_transformer: Optional[int]
-
-
-########################################################################################
-# heads
 
 
 ########################################################################################
@@ -83,9 +79,25 @@ class WavLMForSpeakerRecognition(SpeakerRecognitionLightningModule):
         )
 
         # freeze logic
-        self._freeze_cnn = self.cfg.freeze_cnn
-        self._freeze_transformer = self.cfg.freeze_transformer
-        self._num_steps_frozen = 0
+        self.freeze_cnn = FreezeManager(
+            module=self.wavlm.feature_extractor,
+            is_frozen_at_init=self.cfg.freeze_cnn,
+            num_steps_frozen=self.cfg.num_steps_freeze_cnn,
+        )
+        self.freeze_transformer = FreezeManager(
+            module=[
+                x
+                for x in (
+                    self.wavlm.feature_projection,
+                    self.wavlm.encoder,
+                    self.wavlm.masked_spec_embed,
+                    self.wavlm.adapter,
+                )
+                if x is not None
+            ],
+            is_frozen_at_init=self.cfg.freeze_transformer,
+            num_steps_frozen=self.cfg.num_steps_freeze_transformer,
+        )
 
     @property
     def speaker_embedding_size(self):
@@ -103,41 +115,9 @@ class WavLMForSpeakerRecognition(SpeakerRecognitionLightningModule):
         return logits
 
     def on_train_start(self) -> None:
-        if self._freeze_cnn:
-            freeze_module(self.wavlm.feature_extractor)
-
-        if self._freeze_transformer:
-            freeze_module(self.wavlm.feature_projection)
-            freeze_module(self.wavlm.encoder)
-
-            if self.wavlm.masked_spec_embed is not None:
-                freeze_module(self.wavlm.masked_spec_embed)
-            if self.wavlm.adapter is not None:
-                freeze_module(self.wavlm.adapter)
-
-        self._num_steps_frozen = 0
+        self.freeze_cnn.on_train_start()
+        self.freeze_transformer.on_train_start()
 
     def on_after_backward(self) -> None:
-        self._num_steps_frozen = +1
-
-        if (
-            self._freeze_cnn
-            and self.cfg.num_steps_freeze_cnn is not None
-            and self._num_steps_frozen >= self.cfg.num_steps_freeze_cnn
-        ):
-            self._freeze_cnn = False
-            unfreeze_module(self.wavlm.feature_extractor)
-
-        if (
-            self._freeze_transformer
-            and self.cfg.num_steps_freeze_transformer is not None
-            and self._num_steps_frozen >= self.cfg.num_steps_freeze_transformer
-        ):
-            self._freeze_transformer = False
-            unfreeze_module(self.wavlm.feature_projection)
-            unfreeze_module(self.wavlm.encoder)
-
-            if self.wavlm.masked_spec_embed is not None:
-                unfreeze_module(self.wavlm.masked_spec_embed)
-            if self.wavlm.adapter is not None:
-                unfreeze_module(self.wavlm.adapter)
+        self.freeze_cnn.on_after_backward()
+        self.freeze_transformer.on_after_backward()
