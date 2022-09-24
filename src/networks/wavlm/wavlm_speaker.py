@@ -14,6 +14,7 @@ from omegaconf import DictConfig
 from transformers import WavLMModel
 
 from data_utility.eval.speaker.evaluator import SpeakerTrial
+from src.networks.heads import SpeakerHeadConfig, construct_speaker_head
 from src.networks.speaker_recognition_module import SpeakerRecognitionLightningModule
 from src.util.freeze import FreezeManager
 
@@ -36,6 +37,9 @@ class WavLMForSpeakerRecognitionConfig:
     freeze_transformer: bool  # this also freezes projector and rel. pos. emb
     num_steps_freeze_cnn: Optional[int]
     num_steps_freeze_transformer: Optional[int]
+
+    # head on top of wavLM for speaker recognition
+    head_cfg: SpeakerHeadConfig
 
 
 ########################################################################################
@@ -74,8 +78,10 @@ class WavLMForSpeakerRecognition(SpeakerRecognitionLightningModule):
         else:
             raise ValueError("unable to determine embedding size}")
 
-        self.head = t.nn.Linear(
-            in_features=self.embedding_size, out_features=num_speakers
+        self.head = construct_speaker_head(
+            self.cfg.head_cfg,
+            representation_dim=self.embedding_size,
+            classification_dim=self.num_speakers,
         )
 
         # freeze logic
