@@ -35,6 +35,10 @@ from src.networks.wav2vec2.w2v2_speaker import (
     Wav2vec2ForSpeakerRecognitionConfig,
     Wav2vec2ForSpeakerRecognition,
 )
+from src.networks.wav2vec2.w2v2_speech import (
+    Wav2vec2ForSpeechRecognitionConfig,
+    Wav2vec2ForSpeechRecognition,
+)
 from src.networks.wavlm.wavlm_speaker import (
     WavLMForSpeakerRecognitionConfig,
     WavLMForSpeakerRecognition,
@@ -131,6 +135,35 @@ def construct_speaker_recognition_module(
     return init_model(cfg, network_class, kwargs)
 
 
+def construct_speech_recognition_module(
+    cfg: DictConfig,
+    network_cfg: Union[Wav2vec2ForSpeechRecognitionConfig],
+    dm: Union[LibriSpeechDataModule],
+    loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
+):
+    # every speaker recognition network needs to be given these variables
+    # for training purposes
+    test_names = dm.get_test_names()
+    idx_to_char = dm.get_idx_to_char()
+
+    # get init function based on config type
+    if isinstance(network_cfg, Wav2vec2ForSpeechRecognitionConfig):
+        network_class = Wav2vec2ForSpeechRecognition
+    else:
+        raise ValueError(f"cannot load network from {network_cfg}")
+
+    # init model
+    kwargs = {
+        "root_hydra_config": cfg,
+        "loss_fn_constructor": loss_fn_constructor,
+        "idx_to_char": idx_to_char,
+        "test_names": test_names,
+        "cfg": network_cfg,
+    }
+
+    return init_model(cfg, network_class, kwargs)
+
+
 def init_model(cfg: DictConfig, network_class, kwargs: Dict):
     # load model weights from checkpoint
     potential_checkpoint_path = cfg.get("load_network_from_checkpoint", None)
@@ -168,6 +201,10 @@ def construct_network_module(
         )
     elif isinstance(network_cfg, WavLMForSpeakerRecognitionConfig):
         network = construct_speaker_recognition_module(
+            cfg, network_cfg, dm, loss_fn_constructor
+        )
+    elif isinstance(network_cfg, Wav2vec2ForSpeechRecognitionConfig):
+        network = construct_speech_recognition_module(
             cfg, network_cfg, dm, loss_fn_constructor
         )
     else:

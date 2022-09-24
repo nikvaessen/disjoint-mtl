@@ -47,15 +47,18 @@ class SpeakerRecognitionHead(t.nn.Module):
 
 
 @dataclass
-class LinearHeadConfig(CastingConfig):
+class LinearProjectionHeadConfig(CastingConfig):
     projection_layer_dim: int
     drop_prob: float
     use_cosine_linear: bool  # set to true when using aam-softmax loss
 
 
-class LinearHead(SpeakerRecognitionHead):
+class LinearProjectionHead(SpeakerRecognitionHead):
     def __init__(
-        self, cfg: LinearHeadConfig, representation_dim: int, classification_dim: int
+        self,
+        cfg: LinearProjectionHeadConfig,
+        representation_dim: int,
+        classification_dim: int,
     ):
         super().__init__()
 
@@ -148,14 +151,14 @@ class EcapaTdnnHead(SpeakerRecognitionHead):
 ########################################################################################
 # Encapsulate all heads
 
-SpeakerHeadConfig = Union[LinearHeadConfig, XvectorHeadConfig, EcapaTdnnHead]
+SpeakerHeadConfig = Union[LinearProjectionHeadConfig, XvectorHeadConfig, EcapaTdnnHead]
 
 
 def construct_speaker_head(
     cfg: SpeakerHeadConfig, representation_dim: int, classification_dim: int
 ) -> SpeakerRecognitionHead:
-    if isinstance(cfg, LinearHeadConfig):
-        return LinearHead(
+    if isinstance(cfg, LinearProjectionHeadConfig):
+        return LinearProjectionHead(
             cfg,
             representation_dim=representation_dim,
             classification_dim=classification_dim,

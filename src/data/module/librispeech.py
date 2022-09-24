@@ -181,8 +181,15 @@ class LibriSpeechDataModule(LightningDataModule):
     def get_test_names(self):
         return ["dev_clean", "dev_other", "test_clean", "test_other"]
 
-    def character_vocab(self):
+    def get_vocab_size(self):
         return len(self._character_vocab_json()["characters"])
+
+    def get_idx_to_char(self):
+        vocab_json = self._character_vocab_json()
+
+        idx_to_char = {int(k): v for k, v in vocab_json["idx_to_char"].items()}
+
+        return idx_to_char
 
     def setup(self, stage: Optional[str] = None) -> None:
         # train dp
