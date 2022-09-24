@@ -293,14 +293,13 @@ def run_train_eval_script(cfg: DictConfig):
         if not trainer.global_rank == 0:
             return
 
-    # create a new trainer which uses at most 1 gpu
-    trainer: pl.Trainer = instantiate(
-        cfg.trainer,
-        devices=min(1, cfg.trainer.get("devices", 0)),
-        logger=logger,
-        callbacks=callbacks,
-        profiler=profiler,
-    )
+        trainer: pl.Trainer = instantiate(
+            cfg.trainer,
+            devices=min(1, cfg.trainer.get("devices", 0)),
+            logger=logger,
+            callbacks=callbacks,
+            profiler=profiler,
+        )
 
     if cfg.eval_model and cfg.fit_model:
         # this will select the checkpoint with the best validation metric
