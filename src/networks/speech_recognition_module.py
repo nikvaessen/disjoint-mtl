@@ -104,6 +104,8 @@ class SpeechRecognitionLightningModule(BaseLightningModule):
     ) -> STEP_OUTPUT:
         assert isinstance(batch, SpeechRecognitionBatch)
 
+        t.cuda.empty_cache()
+
         _, (
             letter_prediction,
             letter_prediction_lengths,
@@ -230,7 +232,7 @@ class SpeechRecognitionLightningModule(BaseLightningModule):
         }
 
     def test_epoch_end(self, outputs: List[Dict]) -> None:
-        if len(self.test_pairs) == 1:
+        if len(self.test_names) == 1:
             outputs = [outputs]
 
         result_dict = {}
