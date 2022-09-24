@@ -107,16 +107,16 @@ class WavLMForSpeakerRecognition(SpeakerRecognitionLightningModule):
 
     @property
     def speaker_embedding_size(self):
-        return self.embedding_size
+        return self.head.speaker_embedding_size
 
     def compute_speaker_embedding(self, input_tensor: t.Tensor) -> t.Tensor:
         sequence = self.wavlm(input_tensor).last_hidden_state
-        embedding = t.mean(sequence, dim=1)
+        embedding = self.head.compute_embedding(sequence)
 
         return embedding
 
     def compute_speaker_prediction(self, embedding_tensor: t.Tensor) -> t.Tensor:
-        logits = self.head(embedding_tensor)
+        logits = self.head.compute_prediction(embedding_tensor)
 
         return logits
 
