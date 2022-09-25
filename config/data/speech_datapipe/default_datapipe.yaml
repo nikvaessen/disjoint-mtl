@@ -8,7 +8,7 @@ train_dp:
   shuffle_buffer: 50
 
   # batching
-  max_tokens: 2_800_000
+  max_tokens: 2_400_000
   max_len: 320_000
 
   # logic for giving each worker equal number of data

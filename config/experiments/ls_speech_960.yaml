@@ -12,7 +12,7 @@ defaults:
   - override /trainer: trainer_gpu
 
 trainer:
-  max_steps: 100_000
+  max_steps: 320_000
   val_check_interval: 5000
   precision: 16
 
