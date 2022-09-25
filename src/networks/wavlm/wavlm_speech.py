@@ -1,6 +1,6 @@
 ########################################################################################
 #
-# Implement wav2vec2 as a speech recognition network.
+# Implement wavlm as a speaker recognition network
 #
 # Author(s): Nik Vaessen
 ########################################################################################
@@ -11,7 +11,7 @@ from typing import Callable, List, Optional, Dict, Tuple
 import torch as t
 
 from omegaconf import DictConfig
-from transformers import Wav2Vec2Model
+from transformers import WavLMModel
 
 from src.networks.heads import SpeechHeadConfig, construct_speech_head
 from src.networks.speech_recognition_module import SpeechRecognitionLightningModule
@@ -23,7 +23,7 @@ from src.util.freeze import FreezeManager
 
 
 @dataclass
-class Wav2vec2ForSpeechRecognitionConfig:
+class WavLMForSpeechRecognitionConfig:
     # settings for wav2vec2 architecture
     huggingface_id: str
     reset_weights: bool
@@ -37,7 +37,7 @@ class Wav2vec2ForSpeechRecognitionConfig:
     num_steps_freeze_cnn: Optional[int]
     num_steps_freeze_transformer: Optional[int]
 
-    # head on top of wav2vec2 for speaker recognition
+    # head on top of wavLM for speech recognition
     head_cfg: SpeechHeadConfig
 
 
@@ -45,14 +45,14 @@ class Wav2vec2ForSpeechRecognitionConfig:
 # complete network
 
 
-class Wav2vec2ForSpeechRecognition(SpeechRecognitionLightningModule):
+class WavLMForSpeechRecognition(SpeechRecognitionLightningModule):
     def __init__(
         self,
         root_hydra_config: DictConfig,
         loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
         idx_to_char: Dict[int, str],
         test_names: List[str],
-        cfg: Wav2vec2ForSpeechRecognitionConfig,
+        cfg: WavLMForSpeechRecognitionConfig,
     ):
         super().__init__(
             hyperparameter_config=root_hydra_config,
@@ -64,12 +64,10 @@ class Wav2vec2ForSpeechRecognition(SpeechRecognitionLightningModule):
         self.cfg = cfg
         self.vocab_size = len(idx_to_char)
 
-        self.wav2vec2: Wav2Vec2Model = Wav2Vec2Model.from_pretrained(
-            self.cfg.huggingface_id
-        )
+        self.wavlm: WavLMModel = WavLMModel.from_pretrained(self.cfg.huggingface_id)
 
         if self.cfg.use_gradient_checkpointing:
-            self.wav2vec2.gradient_checkpointing_enable()
+            self.wavlm.gradient_checkpointing_enable()
 
         if "base" in self.cfg.huggingface_id:
             self.embedding_size = 768
@@ -86,7 +84,7 @@ class Wav2vec2ForSpeechRecognition(SpeechRecognitionLightningModule):
 
         # freeze logic
         self.freeze_cnn = FreezeManager(
-            module=self.wav2vec2.feature_extractor,
+            module=self.wavlm.feature_extractor,
             is_frozen_at_init=self.cfg.freeze_cnn,
             num_steps_frozen=self.cfg.num_steps_freeze_cnn,
         )
@@ -94,10 +92,10 @@ class Wav2vec2ForSpeechRecognition(SpeechRecognitionLightningModule):
             module=[
                 x
                 for x in (
-                    self.wav2vec2.feature_projection,
-                    self.wav2vec2.encoder,
-                    self.wav2vec2.masked_spec_embed,
-                    self.wav2vec2.adapter,
+                    self.wavlm.feature_projection,
+                    self.wavlm.encoder,
+                    self.wavlm.masked_spec_embed,
+                    self.wavlm.adapter,
                 )
                 if x is not None
             ],
@@ -108,7 +106,7 @@ class Wav2vec2ForSpeechRecognition(SpeechRecognitionLightningModule):
     def compute_embedding_sequence(
         self, input_tensor: t.Tensor, lengths: List[int]
     ) -> Tuple[t.Tensor, List[int]]:
-        sequence_output = self.wav2vec2(
+        sequence_output = self.wavlm(
             input_values=input_tensor,
             attention_mask=self._construct_attention_mask(
                 num_audio_samples=lengths,
@@ -136,7 +134,7 @@ class Wav2vec2ForSpeechRecognition(SpeechRecognitionLightningModule):
         return attention_mask.to(device=device)
 
     def _compute_feature_extractor_lengths(self, num_audio_samples: List[int]):
-        num_feature_lengths = self.wav2vec2._get_feat_extract_output_lengths(
+        num_feature_lengths = self.wavlm._get_feat_extract_output_lengths(
             t.LongTensor(num_audio_samples)
         ).tolist()
 

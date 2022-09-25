@@ -30,8 +30,8 @@ OmegaConf.register_new_resolver("random_name", random_experiment_id)
 ########################################################################################
 # fake batch generation settings
 
-max_tokens = 2_800_000
-speech_max_frames = 400_000
+max_tokens = 800_000
+speech_max_frames = 320_000
 batch_size = max_tokens // speech_max_frames
 
 gt_tokens = 400
@@ -53,7 +53,7 @@ def run(cfg: DictConfig):
     audio_tensor = torch.rand((batch_size, speech_max_frames))
     length = [speech_max_frames for _ in range(batch_size)]
 
-    gt_tensor = torch.randint(0, 40, size=(batch_size, max_tokens))
+    gt_tensor = torch.randint(low=0, high=40, size=(batch_size, max_tokens))
     gt_lengths = [max_tokens for _ in range(batch_size)]
 
     print(f"{audio_tensor.shape=}")

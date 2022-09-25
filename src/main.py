@@ -43,6 +43,7 @@ from src.networks.wavlm.wavlm_speaker import (
     WavLMForSpeakerRecognitionConfig,
     WavLMForSpeakerRecognition,
 )
+from src.networks.wavlm.wavlm_speech import WavLMForSpeechRecognitionConfig, WavLMForSpeechRecognition
 from src.util.system import get_git_revision_hash
 
 log = logging.getLogger(__name__)
@@ -137,7 +138,9 @@ def construct_speaker_recognition_module(
 
 def construct_speech_recognition_module(
     cfg: DictConfig,
-    network_cfg: Union[Wav2vec2ForSpeechRecognitionConfig],
+    network_cfg: Union[
+        Wav2vec2ForSpeechRecognitionConfig, WavLMForSpeechRecognitionConfig
+    ],
     dm: Union[LibriSpeechDataModule],
     loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
 ):
@@ -149,6 +152,8 @@ def construct_speech_recognition_module(
     # get init function based on config type
     if isinstance(network_cfg, Wav2vec2ForSpeechRecognitionConfig):
         network_class = Wav2vec2ForSpeechRecognition
+    elif isinstance(network_cfg, WavLMForSpeechRecognitionConfig):
+        network_class = WavLMForSpeechRecognition
     else:
         raise ValueError(f"cannot load network from {network_cfg}")
 
@@ -204,6 +209,10 @@ def construct_network_module(
             cfg, network_cfg, dm, loss_fn_constructor
         )
     elif isinstance(network_cfg, Wav2vec2ForSpeechRecognitionConfig):
+        network = construct_speech_recognition_module(
+            cfg, network_cfg, dm, loss_fn_constructor
+        )
+    elif isinstance(network_cfg, WavLMForSpeechRecognitionConfig):
         network = construct_speech_recognition_module(
             cfg, network_cfg, dm, loss_fn_constructor
         )

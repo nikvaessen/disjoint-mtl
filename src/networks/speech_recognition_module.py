@@ -104,8 +104,6 @@ class SpeechRecognitionLightningModule(BaseLightningModule):
     ) -> STEP_OUTPUT:
         assert isinstance(batch, SpeechRecognitionBatch)
 
-        t.cuda.empty_cache()
-
         _, (
             letter_prediction,
             letter_prediction_lengths,
