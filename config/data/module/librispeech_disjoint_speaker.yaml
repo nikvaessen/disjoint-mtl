@@ -37,7 +37,7 @@ test_other_trial_path: ${oc.env:LIBRISPEECH_DIR}/meta/trials_test_other.txt
 # disjoint_set1: 480 hours of set1 for speech
 # disjoint_set2: 480 hours of set2 for speaker
 # disjoint_mtl: MTL training with 2 disjoint sets
-train_set_mode: "disjoint_set2"
+train_set_mode: "set2"
 
 # which data pipes to use
 task_mode: speaker  # 'speech', 'speaker' or 'mtl'

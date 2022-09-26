@@ -31,6 +31,10 @@ from src.data.module.librispeech import (
     LibriSpeechDataModuleConfig,
     LibriSpeechDataModule,
 )
+from src.data.module.librispeech_disjoint import (
+    DisjointedLibriSpeechDataModuleConfig,
+    DisjointedLibriSpeechDataModule,
+)
 from src.networks.wav2vec2.w2v2_speaker import (
     Wav2vec2ForSpeakerRecognitionConfig,
     Wav2vec2ForSpeakerRecognition,
@@ -43,7 +47,10 @@ from src.networks.wavlm.wavlm_speaker import (
     WavLMForSpeakerRecognitionConfig,
     WavLMForSpeakerRecognition,
 )
-from src.networks.wavlm.wavlm_speech import WavLMForSpeechRecognitionConfig, WavLMForSpeechRecognition
+from src.networks.wavlm.wavlm_speech import (
+    WavLMForSpeechRecognitionConfig,
+    WavLMForSpeechRecognition,
+)
 from src.util.system import get_git_revision_hash
 
 log = logging.getLogger(__name__)
@@ -89,6 +96,10 @@ def construct_data_module(cfg: DictConfig):
 
     if isinstance(dm_cfg, LibriSpeechDataModuleConfig):
         dm = LibriSpeechDataModule(
+            dm_cfg, speech_pipe_builders=speech_dpb, speaker_pipe_builders=speaker_dpb
+        )
+    elif isinstance(dm_cfg, DisjointedLibriSpeechDataModuleConfig):
+        dm = DisjointedLibriSpeechDataModule(
             dm_cfg, speech_pipe_builders=speech_dpb, speaker_pipe_builders=speaker_dpb
         )
     else:

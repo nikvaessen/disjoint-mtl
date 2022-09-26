@@ -75,14 +75,14 @@ class DisjointedLibriSpeechDataModuleConfig(CastingConfig):
 # implementation
 
 
-class LibriSpeechDataModule(LightningDataModule):
+class DisjointedLibriSpeechDataModule(LightningDataModule):
     def __init__(
         self,
         cfg: DisjointedLibriSpeechDataModuleConfig,
         speech_pipe_builders: Tuple[DataPipeBuilder, DataPipeBuilder, DataPipeBuilder],
         speaker_pipe_builders: Tuple[DataPipeBuilder, DataPipeBuilder, DataPipeBuilder],
     ):
-        super(LibriSpeechDataModule, self).__init__()
+        super(DisjointedLibriSpeechDataModule, self).__init__()
 
         self.cfg = cfg
 
