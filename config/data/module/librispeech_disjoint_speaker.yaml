@@ -1,0 +1,46 @@
+_target_: src.data.module.librispeech_disjoint.DisjointedLibriSpeechDataModuleConfig
+
+# path to folders containing train, val and test shards
+train_set1_shard_path: ${oc.env:LIBRISPEECH_DIR}/shards/disjoint_train_1
+train_set2_shard_path: ${oc.env:LIBRISPEECH_DIR}/shards/disjoint_train_2
+
+val_set1_shard_path: ${oc.env:LIBRISPEECH_DIR}/shards/disjoint_val_1
+val_set2_shard_path: ${oc.env:LIBRISPEECH_DIR}/shards/disjoint_val_2
+
+dev_clean_shard_path: ${oc.env:LIBRISPEECH_DIR}/shards/dev-clean
+dev_other_shard_path: ${oc.env:LIBRISPEECH_DIR}/shards/dev-other
+
+test_clean_shard_path: ${oc.env:LIBRISPEECH_DIR}/shards/test-clean
+test_other_shard_path: ${oc.env:LIBRISPEECH_DIR}/shards/test-other
+
+# shard pattern
+shard_file_pattern: "*.*.tar*"
+
+# path to meta files for speaker info
+disjoint1_speaker_json: ${oc.env:LIBRISPEECH_DIR}/meta/speakers_disjoint_1.json
+disjoint2_speaker_json: ${oc.env:LIBRISPEECH_DIR}/meta/speakers_disjoint_2.json
+dev_speaker_json: ${oc.env:LIBRISPEECH_DIR}/meta/speakers_dev.json
+test_speaker_json: ${oc.env:LIBRISPEECH_DIR}/meta/speakers_test.json
+
+# path to meta file for speech info
+char_vocab_json: ${oc.env:LIBRISPEECH_DIR}/meta/character_vocabulary.json
+
+# path to trials for speaker recognition eval
+dev_clean_trial_path: ${oc.env:LIBRISPEECH_DIR}/meta/trials_dev_clean.txt
+dev_other_trial_path: ${oc.env:LIBRISPEECH_DIR}/meta/trials_dev_other.txt
+test_clean_trial_path: ${oc.env:LIBRISPEECH_DIR}/meta/trials_test_clean.txt
+test_other_trial_path: ${oc.env:LIBRISPEECH_DIR}/meta/trials_test_other.txt
+
+# train set options
+# 960h: clean-100, clean-360 and other-500 subsets
+# 100h: clean-100 subset
+# disjoint_set1: 480 hours of set1 for speech
+# disjoint_set2: 480 hours of set2 for speaker
+# disjoint_mtl: MTL training with 2 disjoint sets
+train_set_mode: "disjoint_set2"
+
+# which data pipes to use
+task_mode: speaker  # 'speech', 'speaker' or 'mtl'
+
+
+

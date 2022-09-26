@@ -1,6 +1,7 @@
 ########################################################################################
 #
-# This file implement a datamodule for the LibriSpeech dataset.
+# This file implement a datamodule for a disjointed LibriSpeech dataset,
+# where 1 part only has speaker labels, and 1 part only has speech labels.
 #
 # Author(s): Nik Vaessen
 ########################################################################################
@@ -28,15 +29,13 @@ from src.util.config_util import CastingConfig
 
 
 @dataclass
-class LibriSpeechDataModuleConfig(CastingConfig):
+class DisjointedLibriSpeechDataModuleConfig(CastingConfig):
     # path to folders containing train, val and test shards
-    train_c100_shard_path: pathlib.Path
-    train_c360_shard_path: pathlib.Path
-    train_o500_shard_path: pathlib.Path
+    train_set1_shard_path: pathlib.Path
+    train_set2_shard_path: pathlib.Path
 
-    val_c100_shard_path: pathlib.Path
-    val_c360_shard_path: pathlib.Path
-    val_o500_shard_path: pathlib.Path
+    val_set1_shard_path: pathlib.Path
+    val_set2_shard_path: pathlib.Path
 
     dev_clean_shard_path: pathlib.Path
     dev_other_shard_path: pathlib.Path
@@ -48,7 +47,8 @@ class LibriSpeechDataModuleConfig(CastingConfig):
     shard_file_pattern: str
 
     # path to meta files for speaker info
-    train_speaker_json: pathlib.Path
+    disjoint1_speaker_json: pathlib.Path
+    disjoint2_speaker_json: pathlib.Path
     dev_speaker_json: pathlib.Path
     test_speaker_json: pathlib.Path
 
@@ -62,8 +62,9 @@ class LibriSpeechDataModuleConfig(CastingConfig):
     test_other_trial_path: pathlib.Path
 
     # train set options
-    # 960h: clean-100, clean-360 and other-500 subsets
-    # 100h: clean-100 subset
+    # set1: for the ASR task
+    # set2: for the speech task
+    # mtl: for doing MTL with disjointed dataset
     train_set_mode: str
 
     # which pipes to use
@@ -77,7 +78,7 @@ class LibriSpeechDataModuleConfig(CastingConfig):
 class LibriSpeechDataModule(LightningDataModule):
     def __init__(
         self,
-        cfg: LibriSpeechDataModuleConfig,
+        cfg: DisjointedLibriSpeechDataModuleConfig,
         speech_pipe_builders: Tuple[DataPipeBuilder, DataPipeBuilder, DataPipeBuilder],
         speaker_pipe_builders: Tuple[DataPipeBuilder, DataPipeBuilder, DataPipeBuilder],
     ):
@@ -112,8 +113,14 @@ class LibriSpeechDataModule(LightningDataModule):
         self.test_dp_other = None
 
     def _train_speakers_json(self):
-        with self.cfg.train_speaker_json.open("r") as f:
-            return json.load(f)
+        if self.cfg.train_set_mode == "set1":
+            with self.cfg.disjoint1_speaker_json.open("r") as f:
+                return json.load(f)
+        elif self.cfg.train_set_mode == "set2":
+            with self.cfg.disjoint2_speaker_json.open("r") as f:
+                return json.load(f)
+        else:
+            raise ValueError("cannot load correct train_speaker_json")
 
     def _dev_speakers_json(self):
         with self.cfg.dev_speaker_json.open("r") as f:
@@ -187,32 +194,30 @@ class LibriSpeechDataModule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None) -> None:
         # train dp
-        if self.cfg.train_set_mode == "960h":
+        if self.cfg.train_set_mode == "set1" and self.cfg.task_mode == "speech":
             self.train_dp = self.train_pipe_builder.get_pipe(
-                shard_dirs=[
-                    self.cfg.train_c100_shard_path,
-                    self.cfg.train_c360_shard_path,
-                    self.cfg.train_o500_shard_path,
-                ],
+                shard_dirs=self.cfg.train_set1_shard_path,
                 shard_file_pattern=self.cfg.shard_file_pattern,
             )
-        elif self.cfg.train_set_mode == "100h":
-            self.train_dp = self.train_pipe_builder.get_pipe(
-                shard_dirs=self.cfg.train_c100_shard_path,
+            self.val_dp = self.val_pipe_builder.get_pipe(
+                shard_dirs=self.cfg.val_set1_shard_path,
                 shard_file_pattern=self.cfg.shard_file_pattern,
             )
+        elif self.cfg.train_set_mode == "set2" and self.cfg.task_mode == "speaker":
+            self.train_dp = self.train_pipe_builder.get_pipe(
+                shard_dirs=self.cfg.train_set2_shard_path,
+                shard_file_pattern=self.cfg.shard_file_pattern,
+            )
+            self.val_dp = self.val_pipe_builder.get_pipe(
+                shard_dirs=self.cfg.val_set2_shard_path,
+                shard_file_pattern=self.cfg.shard_file_pattern,
+            )
+        elif self.cfg.train_set_mode == "mtl":
+            raise NotImplemented()
         else:
-            raise ValueError(f"unknown {self.cfg.train_set_mode=}")
-
-        # val dp
-        self.val_dp = self.val_pipe_builder.get_pipe(
-            shard_dirs=[
-                self.cfg.val_c100_shard_path,
-                self.cfg.val_c360_shard_path,
-                self.cfg.val_o500_shard_path,
-            ],
-            shard_file_pattern=self.cfg.shard_file_pattern,
-        )
+            raise ValueError(
+                f"unknown combination of {self.cfg.train_set_mode=} and {self.cfg.task_mode=}"
+            )
 
         # test dp
         self.dev_dp_clean = self.test_pipe_builder.get_pipe(
