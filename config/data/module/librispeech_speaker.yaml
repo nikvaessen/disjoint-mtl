@@ -15,10 +15,6 @@ dev_other_shard_path: ${oc.env:LIBRISPEECH_DIR}/shards/dev-other
 test_clean_shard_path: ${oc.env:LIBRISPEECH_DIR}/shards/test-clean
 test_other_shard_path: ${oc.env:LIBRISPEECH_DIR}/shards/test-other
 
-# different train/val set
-train_disjoint_set1_shard_path: ${oc.env:LIBRISPEECH_DIR}/shards/train-disjoint-1
-train_disjoint_set2_shard_path: ${oc.env:LIBRISPEECH_DIR}/shards/train-disjoint-2
-
 # shard pattern
 shard_file_pattern: "*.*.tar*"
 
