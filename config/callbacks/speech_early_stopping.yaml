@@ -28,7 +28,7 @@ ram_monitor:
 # save model checkpoint of weights with best validation performance
 checkpoint:
   _target_: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
-  monitor: val_wer_other
+  monitor: val_wer
   save_top_k: 1
   mode: min
   filename: 'epoch_{epoch:04d}.step_{step:09d}.val-wer_{val_wer_clean:.4f}.best'
@@ -43,7 +43,7 @@ last_checkpoint_pattern: 'epoch_{epoch:04d}.step_{step:09d}.val-wer_{val_wer_cle
 # stop when val_wer_other doesn't improve
 early_stopping_plateau:
   _target_: pytorch_lightning.callbacks.early_stopping.EarlyStopping
-  monitor: val_wer_other
+  monitor: val_wer
   min_delta: 0.00
   patience: 4
   mode: min
@@ -52,7 +52,7 @@ early_stopping_plateau:
 # stop when model doesn't improve or diverges
 early_stopping_diverge:
   _target_: pytorch_lightning.callbacks.early_stopping.EarlyStopping
-  monitor: val_loss_other
+  monitor: val_loss
   min_delta: 0.00
   patience: 1_000_000 # disable monitoring val_loss_other for anything but divergence
   mode: min
