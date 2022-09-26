@@ -23,9 +23,9 @@ train_disjoint_set2_shard_path: ${oc.env:LIBRISPEECH_DIR}/shards/train-disjoint-
 shard_file_pattern: "*.*.tar*"
 
 # path to meta files for speaker info
-train_speaker_json: ${oc.env:LIBRISPEECH_DIR}/meta/train_speakers.json
-dev_speaker_json: ${oc.env:LIBRISPEECH_DIR}/meta/dev_speakers.json
-test_speaker_json: ${oc.env:LIBRISPEECH_DIR}/meta/test_speakers.json
+train_speaker_json: ${oc.env:LIBRISPEECH_DIR}/meta/speakers_train.json
+dev_speaker_json: ${oc.env:LIBRISPEECH_DIR}/meta/speakers_dev.json
+test_speaker_json: ${oc.env:LIBRISPEECH_DIR}/meta/speakers_test.json
 
 # path to meta file for speech info
 char_vocab_json: ${oc.env:LIBRISPEECH_DIR}/meta/character_vocabulary.json
