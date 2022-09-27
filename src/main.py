@@ -334,6 +334,7 @@ def run_train_eval_script(cfg: DictConfig):
         logger=logger,
         callbacks=callbacks,
         profiler=profiler,
+        plugins=SLURMEnvironment(auto_requeue=False),
     )
 
     # construct lighting module for train/test
