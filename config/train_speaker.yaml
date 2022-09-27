@@ -43,10 +43,10 @@ tag: ${now:%Y-%m-%d}
 hydra:
   run:
     # set root output directory
-    dir: ${log_folder}/run/${now:%Y-%m-%d_%H-%M-%S}/${experiment_name}
+    dir: ${log_folder}/disjoint-mtl/run/${now:%Y-%m-%d_%H-%M-%S}/${experiment_name}
   sweep:
     # set root output directory
-    dir: ${log_folder}/sweep/${now:%Y-%m-%d_%H-%M-%S}
+    dir: ${log_folder}/disjoint-mtl/sweep/${now:%Y-%m-%d_%H-%M-%S}
     subdir: ${experiment_name}
   job:
     chdir: true

@@ -21,8 +21,8 @@ from torch.distributed import destroy_process_group
 from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.plugins.environments import SLURMEnvironment
 
-import src.optim.loss.cross_entropy
 from data_utility.pipe.builder import (
     SpeakerRecognitionDataPipeBuilder,
     SpeechRecognitionDataPipeBuilder,
@@ -334,6 +334,7 @@ def run_train_eval_script(cfg: DictConfig):
         logger=logger,
         callbacks=callbacks,
         profiler=profiler,
+        plugins=[SLURMEnvironment(auto_requeue=False)]
     )
 
     # construct lighting module for train/test
