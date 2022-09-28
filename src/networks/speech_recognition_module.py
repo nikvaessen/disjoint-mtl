@@ -104,26 +104,6 @@ class SpeechRecognitionLightningModule(BaseLightningModule):
         optimized_idx: Optional[int] = None,
     ) -> STEP_OUTPUT:
         assert isinstance(batch, SpeechRecognitionBatch)
-
-        def _log_batch():
-            with (pathlib.Path.cwd() / "train_batches.log").open("a") as f:
-                audio_shape = batch.audio_tensor.shape
-                audio_num_tokens = audio_shape[0] * audio_shape[1]
-                audio_padding = audio_num_tokens - sum(batch.audio_num_frames)
-
-                gt_shape = batch.transcriptions_tensor.shape
-                gt_num_tokens = (
-                    batch.transcriptions_tensor.shape[0]
-                    * batch.transcriptions_tensor.shape[1]
-                )
-                gt_padding = gt_num_tokens - sum(batch.transcription_length)
-
-                print(f"{batch_idx=}", file=f)
-                print(f"{audio_shape=} {audio_num_tokens=} {audio_padding=}", file=f)
-                print(f"{gt_shape=} {gt_num_tokens=} {gt_padding=}", file=f, flush=True)
-
-        _log_batch()
-
         _, (
             letter_prediction,
             letter_prediction_lengths,
@@ -153,6 +133,21 @@ class SpeechRecognitionLightningModule(BaseLightningModule):
             # log training loss
             self.metric_train_loss(loss.detach().cpu().item())
             self.metric_train_wer(train_wer)
+
+            if batch_idx == 0:
+                with (pathlib.Path.cwd() / "train_predictions.log").open("a") as f:
+                    for idx, (pred, gt) in enumerate(
+                        zip(predicted_transcriptions, label_transcriptions)
+                    ):
+                        print(f"{idx:>3d}: {batch.keys[idx]}", file=f)
+                        print(f"{idx:>3d}: prediction=`{pred}`", file=f)
+                        print(f"{idx:>3d}:      label=`{gt}`", file=f)
+                    print(
+                        f"{train_wer=}\n",
+                        end="\n\n",
+                        file=f,
+                        flush=True,
+                    )
 
             if batch_idx % 100 == 0:
                 self.log_dict(
