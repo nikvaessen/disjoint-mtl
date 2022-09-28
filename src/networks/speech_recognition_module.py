@@ -7,6 +7,7 @@
 
 import json
 import logging
+import os
 import pathlib
 
 from abc import abstractmethod
@@ -103,6 +104,25 @@ class SpeechRecognitionLightningModule(BaseLightningModule):
         optimized_idx: Optional[int] = None,
     ) -> STEP_OUTPUT:
         assert isinstance(batch, SpeechRecognitionBatch)
+
+        def _log_batch():
+            with (pathlib.Path.cwd() / "train_batches.log").open("a") as f:
+                audio_shape = batch.audio_tensor.shape
+                audio_num_tokens = audio_shape[0] * audio_shape[1]
+                audio_padding = audio_num_tokens - sum(batch.audio_num_frames)
+
+                gt_shape = batch.transcriptions_tensor.shape
+                gt_num_tokens = (
+                    batch.transcriptions_tensor.shape[0]
+                    * batch.transcriptions_tensor.shape[1]
+                )
+                gt_padding = gt_num_tokens - sum(batch.transcription_length)
+
+                print(f"{batch_idx=}", file=f)
+                print(f"{audio_shape=} {audio_num_tokens=} {audio_padding=}", file=f)
+                print(f"{gt_shape=} {gt_num_tokens=} {gt_padding=}", file=f, flush=True)
+
+        _log_batch()
 
         _, (
             letter_prediction,
