@@ -25,7 +25,7 @@ val_dp:
   shuffle_buffer: 256
 
   # batching
-  batch_size: 1
+  batch_size: 8
   drop_last: false
 
   # logic for giving each worker equal number of data
