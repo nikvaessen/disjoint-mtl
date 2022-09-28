@@ -308,11 +308,11 @@ def construct_logger(cfg: DictConfig):
 
 
 def run_train_eval_script(cfg: DictConfig):
-    # set random seed for main script and workers
-    pl.seed_everything(cfg.seed, workers=True)
-
     # create logger
     logger = construct_logger(cfg)
+
+    # set random seed for main script and workers
+    pl.seed_everything(cfg.seed, workers=True)
 
     # print config
     print(OmegaConf.to_yaml(cfg))
