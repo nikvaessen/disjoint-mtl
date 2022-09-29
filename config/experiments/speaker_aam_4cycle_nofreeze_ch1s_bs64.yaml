@@ -8,7 +8,7 @@ defaults:
   - override /network: speech_wav2vec2_linear
   - override /optim/algo: adam
   - override /optim/schedule: 4cycle
-  - override /optim/loss: ctc
+  - override /optim/loss: aam_softmax
   - override /trainer: trainer_gpu
 
 trainer:
