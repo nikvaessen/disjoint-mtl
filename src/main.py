@@ -36,6 +36,10 @@ from src.data.module.librispeech_disjoint import (
     DisjointedLibriSpeechDataModuleConfig,
     DisjointedLibriSpeechDataModule,
 )
+from src.data.module.voxceleb import (
+    VoxCelebDataModuleConfig,
+    VoxCelebDataModule,
+)
 from src.networks.wav2vec2.w2v2_speaker import (
     Wav2vec2ForSpeakerRecognitionConfig,
     Wav2vec2ForSpeakerRecognition,
@@ -101,6 +105,10 @@ def construct_data_module(cfg: DictConfig):
         )
     elif isinstance(dm_cfg, DisjointedLibriSpeechDataModuleConfig):
         dm = DisjointedLibriSpeechDataModule(
+            dm_cfg, speech_pipe_builders=speech_dpb, speaker_pipe_builders=speaker_dpb
+        )
+    elif isinstance(dm_cfg, VoxCelebDataModuleConfig):
+        dm = VoxCelebDataModule(
             dm_cfg, speech_pipe_builders=speech_dpb, speaker_pipe_builders=speaker_dpb
         )
     else:

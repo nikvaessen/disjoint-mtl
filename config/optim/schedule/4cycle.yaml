@@ -3,16 +3,16 @@ scheduler:
   _target_: torch.optim.lr_scheduler.CyclicLR
 
   # the lowest lr in the cycle
-  base_lr: 1e-4
+  base_lr: ${divide:${optim.algo.lr}, 100}
 
   # the peak lr in the cycle
-  max_lr: 0.02
+  max_lr: ${optim.algo.lr}
 
   # number of steps to go from base_lr to max_lr
-  step_size_up: 2500
+  step_size_up: ${idivide:${trainer.max_steps},8}
 
   # number of steps to go from max+lr to base_lr
-  step_size_down: 2500
+  step_size_down: ${idivide:${trainer.max_steps},8}
 
   # Adam doesn't have `momentum` parameter, can only be true with SGD
   cycle_momentum: False

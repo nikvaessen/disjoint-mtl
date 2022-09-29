@@ -91,6 +91,7 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
         optimized_idx: Optional[int] = None,
     ):
         assert isinstance(batch, SpeakerRecognitionBatch)
+        assert batch.id_tensor is not None
 
         audio_input = batch.audio_tensor
         spk_label = batch.id_tensor
@@ -141,6 +142,7 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
         dataloader_idx: Optional[int] = None,
     ):
         assert isinstance(batch, SpeakerRecognitionBatch)
+        assert batch.id_tensor is not None
 
         audio_input = batch.audio_tensor
         label = batch.id_tensor

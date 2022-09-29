@@ -8,6 +8,7 @@
 ########################################################################################
 
 import dataclasses
+import pathlib
 
 from enum import Enum
 from typing import TypeVar, Generic, Union
@@ -53,7 +54,7 @@ def post_init_type_cast(dataclass):
                 typehint_cls = nested_typehint_class.__args__[0]
                 obj = [typehint_cls(v) for v in value]
             else:
-                obj = typehint_cls(value)
+                obj = nested_typehint_class(value)
 
         # support List[t]
         elif hasattr(typehint_cls, "__origin__") and typehint_cls.__origin__ == list:

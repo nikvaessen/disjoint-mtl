@@ -49,8 +49,6 @@ class LibriSpeechDataModuleConfig(CastingConfig):
 
     # path to meta files for speaker info
     train_speaker_json: pathlib.Path
-    dev_speaker_json: pathlib.Path
-    test_speaker_json: pathlib.Path
 
     # path to meta file for speech info
     char_vocab_json: pathlib.Path
@@ -115,14 +113,6 @@ class LibriSpeechDataModule(LightningDataModule):
         with self.cfg.train_speaker_json.open("r") as f:
             return json.load(f)
 
-    def _dev_speakers_json(self):
-        with self.cfg.dev_speaker_json.open("r") as f:
-            return json.load(f)
-
-    def _test_speakers_json(self):
-        with self.cfg.test_speaker_json.open("r") as f:
-            return json.load(f)
-
     def _character_vocab_json(self):
         with self.cfg.char_vocab_json.open("r") as f:
             return json.load(f)
@@ -137,10 +127,6 @@ class LibriSpeechDataModule(LightningDataModule):
         )
         self.val_pipe_builder.set_speaker_to_idx(
             self._train_speakers_json()["speaker_to_idx"]
-        )
-        self.test_pipe_builder.set_speaker_to_idx(
-            self._dev_speakers_json()["speaker_to_idx"]
-            | self._test_speakers_json()["speaker_to_idx"]
         )
 
     def _set_character_to_idx(self):
