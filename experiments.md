@@ -30,3 +30,14 @@ callbacks=speech_early_stopping \
 hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=6 \
 hydra.launcher.timeout_min=4800
 ```
+
+### SV on voxceleb with wav2vec2 and wavLM, different LR and chunk size 1, 2, 3
+
+```
+python run_speaker.py -m +experiments=vox_speaker \
+network=speaker_wavlm_linear,speaker_wav2vec2_linear \
+optim.algo.lr=1e-5,1e-4 \
+data.speaker_datapipe.train_dp.chunk_size_sec=1,2,3 
+hydra/launcher=slurm_11vram hydra.launcher.array_parallelism=2 \
+hydra.launcher.timeout_min=1440
+```

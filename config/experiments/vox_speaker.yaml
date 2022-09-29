@@ -1,0 +1,30 @@
+# @package _global_
+
+defaults:
+  - override /callbacks: speech_default
+  - override /data/module: voxceleb
+  - override /data/speaker_datapipe: default_datapipe
+  - override /data/speech_datapipe: default_datapipe
+  - override /network: speech_wav2vec2_linear
+  - override /optim/algo: adam
+  - override /optim/schedule: 4cycle
+  - override /optim/loss: ctc
+  - override /trainer: trainer_gpu
+
+trainer:
+  max_steps: 100_000
+  val_check_interval: 5000
+  precision: 16
+
+data:
+  speaker_datapipe:
+    train_dp:
+      chunk_size_sec: 1
+      batch_size: 32
+
+network:
+  freeze_transformer: False
+
+optim:
+  algo:
+    lr: 1e-5
