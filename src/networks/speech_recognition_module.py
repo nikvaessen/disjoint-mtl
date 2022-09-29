@@ -134,7 +134,7 @@ class SpeechRecognitionLightningModule(BaseLightningModule):
             self.metric_train_loss(loss.detach().cpu().item())
             self.metric_train_wer(train_wer)
 
-            if batch_idx == 0:
+            if batch_idx % 5000 == 0:
                 with (pathlib.Path.cwd() / "train_predictions.log").open("a") as f:
                     for idx, (pred, gt) in enumerate(
                         zip(predicted_transcriptions, label_transcriptions)
@@ -198,6 +198,18 @@ class SpeechRecognitionLightningModule(BaseLightningModule):
                 until_seq_idx=batch.transcription_length,
                 idx_to_char=self.idx_to_char,
             )
+
+        if batch_idx == 0:
+            with (pathlib.Path.cwd() / "val_predictions.log").open("a") as f:
+                for idx, (pred, gt) in enumerate(
+                    zip(predicted_transcriptions, label_transcriptions)
+                ):
+                    print(f"{idx:>3d}: {batch.keys[idx]}", file=f)
+                    print(f"{idx:>3d}: prediction=`{pred}`", file=f)
+                    print(f"{idx:>3d}:      label=`{gt}`", file=f)
+
+                val_wer = calculate_wer(predicted_transcriptions, label_transcriptions)
+                print(f"{val_wer}\n", end="\n\n", file=f, flush=True)
 
         return {
             "transcription": predicted_transcriptions,
