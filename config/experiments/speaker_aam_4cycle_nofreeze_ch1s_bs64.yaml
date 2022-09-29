@@ -1,11 +1,11 @@
 # @package _global_
 
 defaults:
-  - override /callbacks: speech_default
+  - override /callbacks: speaker_default
   - override /data/module: voxceleb
   - override /data/speaker_datapipe: default_datapipe
   - override /data/speech_datapipe: default_datapipe
-  - override /network: speech_wav2vec2_linear
+  - override /network: speaker_wav2vec2_linear
   - override /optim/algo: adam
   - override /optim/schedule: 4cycle
   - override /optim/loss: aam_softmax
