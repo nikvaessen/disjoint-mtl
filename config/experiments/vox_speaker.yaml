@@ -27,7 +27,6 @@ network:
   head_cfg:
     use_cosine_linear: true
 
-
 optim:
   algo:
     lr: 1e-5

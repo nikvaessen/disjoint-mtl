@@ -67,6 +67,21 @@ class LibriSpeechDataModuleConfig(CastingConfig):
     # which pipes to use
     task_mode: str  # 'speech', 'speaker' or 'mtl'
 
+    # optionally, evaluate on VoxCeleb as well
+    eval_on_voxceleb: bool
+
+    # paths to data of LibriSpeech
+    vox2_dev: Optional[pathlib.Path] = None
+    vox1_test_o: Optional[pathlib.Path] = None
+    vox1_test_e: Optional[pathlib.Path] = None
+    vox1_test_h: Optional[pathlib.Path] = None
+
+    # path to trials for speaker recognition eval
+    vox2_dev_trial_path: Optional[pathlib.Path] = None
+    vox1_o_trial_path: Optional[pathlib.Path] = None
+    vox1_e_trial_path: Optional[pathlib.Path] = None
+    vox1_h_trial_path: Optional[pathlib.Path] = None
+
 
 ########################################################################################
 # implementation
@@ -109,6 +124,11 @@ class LibriSpeechDataModule(LightningDataModule):
         self.test_dp_clean = None
         self.test_dp_other = None
 
+        self.vox2_dev_dp = None
+        self.vox1_o_dp = None
+        self.vox1_e_dp = None
+        self.vox1_h_dp = None
+
     def _train_speakers_json(self):
         with self.cfg.train_speaker_json.open("r") as f:
             return json.load(f)
@@ -148,18 +168,30 @@ class LibriSpeechDataModule(LightningDataModule):
         return len(self._train_speakers_json()["speakers"])
 
     def get_test_speaker_eval_list(self) -> List[List[SpeakerTrial]]:
-        return [
-            SpeakerTrial.from_file(f)
-            for f in [
-                self.cfg.dev_clean_trial_path,
-                self.cfg.dev_other_trial_path,
-                self.cfg.test_clean_trial_path,
-                self.cfg.test_other_trial_path,
-            ]
+        paths = [
+            self.cfg.dev_clean_trial_path,
+            self.cfg.dev_other_trial_path,
+            self.cfg.test_clean_trial_path,
+            self.cfg.test_other_trial_path,
         ]
 
+        if self.cfg.task_mode == "speaker" and self.cfg.eval_on_voxceleb:
+            paths.extend(
+                [
+                    self.cfg.vox2_dev_trial_path,
+                    self.cfg.vox1_o_trial_path,
+                    self.cfg.vox1_e_trial_path,
+                    self.cfg.vox1_h_trial_path,
+                ]
+            )
+
+        return [SpeakerTrial.from_file(f) for f in []]
+
     def get_test_names(self):
-        return ["dev_clean", "dev_other", "test_clean", "test_other"]
+        names = ["dev_clean", "dev_other", "test_clean", "test_other"]
+
+        if self.cfg.task_mode == "speaker" and self.cfg.eval_on_voxceleb:
+            names.extend(["vox2_dev", "vox1_o", "vox1_e", "vox1_h"])
 
     def get_vocab_size(self):
         return len(self._character_vocab_json()["characters"])
@@ -218,6 +250,24 @@ class LibriSpeechDataModule(LightningDataModule):
             shard_file_pattern=self.cfg.shard_file_pattern,
         )
 
+        if self.cfg.task_mode == "speaker" and self.cfg.eval_on_voxceleb:
+            self.vox2_dev_dp = self.test_pipe_builder.get_pipe(
+                shard_dirs=self.cfg.vox2_dev,
+                shard_file_pattern=self.cfg.shard_file_pattern,
+            )
+            self.vox1_o_dp = self.test_pipe_builder.get_pipe(
+                shard_dirs=self.cfg.vox1_test_o,
+                shard_file_pattern=self.cfg.shard_file_pattern,
+            )
+            self.vox1_e_dp = self.test_pipe_builder.get_pipe(
+                shard_dirs=self.cfg.vox1_test_e,
+                shard_file_pattern=self.cfg.shard_file_pattern,
+            )
+            self.vox1_h_dp = self.test_pipe_builder.get_pipe(
+                shard_dirs=self.cfg.vox1_test_h,
+                shard_file_pattern=self.cfg.shard_file_pattern,
+            )
+
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         return self.train_pipe_builder.wrap_pipe(self.train_dp)
 
@@ -225,9 +275,16 @@ class LibriSpeechDataModule(LightningDataModule):
         return self.val_pipe_builder.wrap_pipe(self.val_dp)
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
-        return [
-            self.test_pipe_builder.wrap_pipe(self.dev_dp_clean),
-            self.test_pipe_builder.wrap_pipe(self.dev_dp_other),
-            self.test_pipe_builder.wrap_pipe(self.test_dp_clean),
-            self.test_pipe_builder.wrap_pipe(self.test_dp_other),
+        dp_list = [
+            self.dev_dp_clean,
+            self.dev_dp_other,
+            self.test_dp_clean,
+            self.test_dp_other,
         ]
+
+        if self.cfg.task_mode == "speaker" and self.cfg.eval_on_voxceleb:
+            dp_list.extend(
+                [self.vox2_dev_dp, self.vox1_o_dp, self.vox1_e_dp, self.vox1_h_dp]
+            )
+
+        return [self.test_pipe_builder.wrap_pipe(dp) for dp in dp_list]

@@ -41,5 +41,20 @@ train_set_mode: "960h"
 # which data pipes to use
 task_mode: speaker  # 'speech', 'speaker' or 'mtl'
 
+# optionally, evaluate on VoxCeleb as well
+eval_on_voxceleb: bool
+
+# paths to data of LibriSpeech
+vox2_dev: ${oc.env:VOXCELEB_DIR}/shards/vox2_dev
+vox1_test_o: ${oc.env:VOXCELEB_DIR}/shards/vox1_test_o
+vox1_test_e: ${oc.env:VOXCELEB_DIR}/shards/vox1_test_e
+vox1_test_h: ${oc.env:VOXCELEB_DIR}/shards/vox1_test_h
+
+# path to trials for speaker recognition eval
+vox2_dev_trial_path: ${oc.env:VOXCELEB_DIR}/meta/trials_dev.txt
+vox1_o_trial_path: ${oc.env:VOXCELEB_DIR}/meta/veri_test2.txt
+vox1_e_trial_path: ${oc.env:VOXCELEB_DIR}/meta/list_test_all2.txt
+vox1_h_trial_path: ${oc.env:VOXCELEB_DIR}/meta/list_test_hard2.txt
+
 
 
