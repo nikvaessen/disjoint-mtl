@@ -24,9 +24,7 @@ from omegaconf import DictConfig
 
 from data_utility.eval.speech.wer import calculate_wer
 from data_utility.eval.speech.transform import (
-    decode_idx_sequence,
     decode_predictions_greedy,
-    decode_idx_sequence_batch,
 )
 from data_utility.pipe.containers import SpeechRecognitionBatch
 from src.networks.base_lightning_module import BaseLightningModule
@@ -113,7 +111,7 @@ class SpeechRecognitionLightningModule(BaseLightningModule):
             predictions=letter_prediction,
             ground_truths=batch.transcriptions_tensor,
             prediction_lengths=letter_prediction_lengths,
-            ground_truth_lengths=batch.transcription_length,
+            ground_truth_lengths=batch.transcriptions_length,
         )
 
         with torch.no_grad():
@@ -122,11 +120,7 @@ class SpeechRecognitionLightningModule(BaseLightningModule):
                 until_seq_idx=letter_prediction_lengths,
                 idx_to_char=self.idx_to_char,
             )
-            label_transcriptions = decode_idx_sequence_batch(
-                idx_sequence=batch.transcriptions_tensor,
-                until_seq_idx=batch.transcription_length,
-                idx_to_char=self.idx_to_char,
-            )
+            label_transcriptions = batch.transcriptions
 
             train_wer = calculate_wer(predicted_transcriptions, label_transcriptions)
 
@@ -182,7 +176,7 @@ class SpeechRecognitionLightningModule(BaseLightningModule):
             predictions=letter_prediction,
             ground_truths=batch.transcriptions_tensor,
             prediction_lengths=letter_prediction_lengths,
-            ground_truth_lengths=batch.transcription_length,
+            ground_truth_lengths=batch.transcriptions_length,
         )
 
         self.metric_val_loss(loss.detach().cpu().item())
@@ -193,11 +187,7 @@ class SpeechRecognitionLightningModule(BaseLightningModule):
                 until_seq_idx=letter_prediction_lengths,
                 idx_to_char=self.idx_to_char,
             )
-            label_transcriptions = decode_idx_sequence_batch(
-                idx_sequence=batch.transcriptions_tensor,
-                until_seq_idx=batch.transcription_length,
-                idx_to_char=self.idx_to_char,
-            )
+            label_transcriptions = batch.transcriptions
 
         if batch_idx == 0:
             with (pathlib.Path.cwd() / "val_predictions.log").open("a") as f:
@@ -245,11 +235,7 @@ class SpeechRecognitionLightningModule(BaseLightningModule):
                 until_seq_idx=letter_prediction_lengths,
                 idx_to_char=self.idx_to_char,
             )
-            label_transcriptions = decode_idx_sequence_batch(
-                idx_sequence=batch.transcriptions_tensor,
-                until_seq_idx=batch.transcription_length,
-                idx_to_char=self.idx_to_char,
-            )
+            label_transcriptions = batch.transcriptions
 
         return {
             "transcription": predicted_transcriptions,
