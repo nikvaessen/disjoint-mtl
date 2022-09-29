@@ -42,7 +42,7 @@ train_set_mode: "960h"
 task_mode: speaker  # 'speech', 'speaker' or 'mtl'
 
 # optionally, evaluate on VoxCeleb as well
-eval_on_voxceleb: bool
+eval_on_voxceleb: true
 
 # paths to data of LibriSpeech
 vox2_dev: ${oc.env:VOXCELEB_DIR}/shards/vox2_dev

@@ -41,5 +41,6 @@ train_set_mode: "960h"
 # which data pipes to use
 task_mode: speech  # 'speech', 'speaker' or 'mtl'
 
-
+# optionally, evaluate on VoxCeleb as well
+eval_on_voxceleb: false
 
