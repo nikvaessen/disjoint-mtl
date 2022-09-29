@@ -20,7 +20,7 @@ data:
   speaker_datapipe:
     train_dp:
       chunk_size_sec: 1
-      batch_size: 32
+      batch_size: 64
 
 network:
   freeze_transformer: False
@@ -29,4 +29,4 @@ network:
 
 optim:
   algo:
-    lr: 1e-5
+    lr: 1e-4
