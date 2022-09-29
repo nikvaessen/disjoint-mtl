@@ -7,6 +7,7 @@
 ########################################################################################
 
 import logging
+import os
 
 from typing import List, Dict, Union, Callable
 
@@ -315,11 +316,15 @@ def run_train_eval_script(cfg: DictConfig):
     pl.seed_everything(cfg.seed, workers=True)
 
     # print config
-    print(OmegaConf.to_yaml(cfg))
     print(f"current git commit hash: {get_git_revision_hash()}")
     print(f"PyTorch version is {t.__version__}")
     print(f"PyTorch Lightning version is {pl.__version__}")
     print(f"transformers version is {transformers.__version__}")
+    if "SLURM_ARRAY_TASK_ID" in os.environ:
+        job_id = os.environ["SLURM_JOB_ID"]
+        task_id = os.environ["SLURM_ARRAY_TASK_ID"]
+        print(f"detected slurm array job: {job_id}_{task_id}")
+    print(OmegaConf.to_yaml(cfg))
     print()
 
     # construct data module
