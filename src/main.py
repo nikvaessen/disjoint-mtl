@@ -16,7 +16,7 @@ import pytorch_lightning as pl
 import transformers
 import wandb
 
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig, OmegaConf, ListConfig
 from hydra.utils import instantiate
 from torch.distributed import destroy_process_group
 from pytorch_lightning import Callback
@@ -298,7 +298,8 @@ def construct_logger(cfg: DictConfig):
 
         if isinstance(cfg.tag, str):
             tag.append(cfg.tag)
-        elif isinstance(cfg.tag, list):
+
+        if isinstance(cfg.tag, ListConfig):
             tag.extend(cfg.tag)
 
         logger = WandbLogger(
