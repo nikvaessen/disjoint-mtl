@@ -17,7 +17,7 @@ train_dp:
   # logic for giving each worker equal number of data
   allow_partial_shards: true
   num_workers: 5
-  drop_last: false
+  drop_last: true
 
 
 val_dp:
