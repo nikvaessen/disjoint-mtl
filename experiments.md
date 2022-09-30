@@ -10,7 +10,7 @@ optim.algo.lr=1.78e-4 \
 data.speaker_datapipe.train_dp.batch_size=64 \
 data.speaker_datapipe.train_dp.chunk_size_sec=1,3  \
 hydra/launcher=slurm hydra.launcher.array_parallelism=2 hydra.launcher.timeout_min=1440 \
-tag=['vox2']
+tag=vox2
 ```
 
 ### LibriSpeech 960h 
@@ -23,7 +23,7 @@ optim.algo.lr=1.78e-4 \
 data.speaker_datapipe.train_dp.batch_size=64 \
 data.speaker_datapipe.train_dp.chunk_size_sec=1,3  \
 hydra/launcher=slurm hydra.launcher.array_parallelism=2 hydra.launcher.timeout_min=1440 \
-tag=['ls960h']
+tag=ls960h
 ```
 
 ### disjoint LibriSpeech
@@ -38,7 +38,7 @@ optim.algo.lr=1.78e-4 \
 data.speaker_datapipe.train_dp.batch_size=64 \
 data.speaker_datapipe.train_dp.chunk_size_sec=1,3  \
 hydra/launcher=slurm hydra.launcher.array_parallelism=2 hydra.launcher.timeout_min=1440 \
-tag=['ls_clean']
+tag=ls_clean
 ```
 
 #### other
@@ -51,7 +51,7 @@ optim.algo.lr=1.78e-4 \
 data.speaker_datapipe.train_dp.batch_size=64 \
 data.speaker_datapipe.train_dp.chunk_size_sec=1,3  \
 hydra/launcher=slurm hydra.launcher.array_parallelism=2 hydra.launcher.timeout_min=1440 \
-tag=['ls_other']
+tag=ls_other
 ```
 
 ## ASR
@@ -65,7 +65,7 @@ network=speech_wav2vec2_linear,speech_wavvlm_linear \
 optim.algo.lr=1e-4 \
 hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=2 \
 hydra.launcher.timeout_min=4800 \
-tag=['ls960h']
+tag=ls960h
 ```
 
 ### disjoint LibriSpeech
@@ -79,7 +79,7 @@ network=speech_wav2vec2_linear,speech_wavvlm_linear \
 optim.algo.lr=1e-4 \
 hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=2 \
 hydra.launcher.timeout_min=4800 \
-tag=['ls_clean']
+tag=ls_clean
 ```
 
 #### other
@@ -91,5 +91,5 @@ network=speech_wav2vec2_linear,speech_wavvlm_linear \
 optim.algo.lr=1e-4 \
 hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=2 \
 hydra.launcher.timeout_min=4800 \
-tag=['ls_other']
+tag=ls_other
 ```
