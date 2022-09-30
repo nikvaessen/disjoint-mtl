@@ -89,7 +89,6 @@ python run_speech.py -m +experiments=speech_ctc_3st_freeze \
 data/module=speech_librispeech_other \
 network=speech_wav2vec2_linear,speech_wavvlm_linear \
 optim.algo.lr=1e-4 \
-callbacks=speech_early_stopping \
 hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=2 \
 hydra.launcher.timeout_min=4800 \
 tag=['ls_other']

@@ -294,8 +294,12 @@ def construct_profiler(cfg: DictConfig):
 
 def construct_logger(cfg: DictConfig):
     if cfg.use_wandb:
+        tag = [cfg.date_tag]
+
         if isinstance(cfg.tag, str):
-            cfg.tag = [cfg.tag]
+            tag.append(cfg.tag)
+        elif isinstance(cfg.tag, list):
+            tag.extend(cfg.tag)
 
         logger = WandbLogger(
             project=cfg.project_name,

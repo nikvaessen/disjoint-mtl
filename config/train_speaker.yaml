@@ -36,7 +36,8 @@ experiment_name: ${random_name:}
 
 # tag to add to the experiment dashboard for easy filtering
 # of certain experiment
-tag: ${now:%Y-%m-%d}
+date_tag: ${now:%Y-%m-%d}
+tag: null
 
 # config variables for hydra
 hydra:
