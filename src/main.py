@@ -304,7 +304,7 @@ def construct_logger(cfg: DictConfig):
         logger = WandbLogger(
             project=cfg.project_name,
             name=cfg.experiment_name,
-            tags=cfg.tag,
+            tags=tag,
         )
         # init the wandb agent
         _ = logger.experiment
