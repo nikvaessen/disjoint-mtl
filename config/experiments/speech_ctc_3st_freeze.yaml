@@ -2,8 +2,7 @@
 
 defaults:
   - override /callbacks: speech_default
-  - override /data/module: librispeech_speech
-  - override /data/speaker_datapipe: default_datapipe
+  - override /data/module: speech_librispeech_960h
   - override /data/speech_datapipe: default_datapipe
   - override /network: speech_wav2vec2_linear
   - override /optim/algo: adam
@@ -18,4 +17,4 @@ trainer:
 
 optim:
   algo:
-    lr: 1e-5
+    lr: 1e-4

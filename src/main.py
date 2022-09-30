@@ -28,35 +28,25 @@ from data_utility.pipe.builder import (
     SpeakerRecognitionDataPipeBuilder,
     SpeechRecognitionDataPipeBuilder,
 )
-from src.data.module.speech import (
+from src.data.module import (
     SpeechRecognitionDataModuleConfig,
-    LibriSpeechDataModule,
     SpeechRecognitionDataModule,
-)
-from src.data.module.librispeech_disjoint import (
-    DisjointedLibriSpeechDataModuleConfig,
-    DisjointedLibriSpeechDataModule,
-)
-from src.data.module.speaker import (
     SpeakerRecognitionDataModuleConfig,
     SpeakerRecognitionDataModule,
 )
-from src.networks.wav2vec2.w2v2_speaker import (
+from src.networks.wav2vec2 import (
     Wav2vec2ForSpeakerRecognitionConfig,
     Wav2vec2ForSpeakerRecognition,
-)
-from src.networks.wav2vec2.w2v2_speech import (
     Wav2vec2ForSpeechRecognitionConfig,
     Wav2vec2ForSpeechRecognition,
 )
-from src.networks.wavlm.wavlm_speaker import (
+from src.networks.wavlm import (
     WavLMForSpeakerRecognitionConfig,
     WavLMForSpeakerRecognition,
-)
-from src.networks.wavlm.wavlm_speech import (
     WavLMForSpeechRecognitionConfig,
     WavLMForSpeechRecognition,
 )
+
 from src.util.system import get_git_revision_hash
 
 log = logging.getLogger(__name__)

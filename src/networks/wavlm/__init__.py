@@ -1,0 +1,2 @@
+from .wavlm_speech import WavLMForSpeechRecognitionConfig, WavLMForSpeechRecognition
+from .wavlm_speaker import WavLMForSpeakerRecognition, WavLMForSpeakerRecognitionConfig

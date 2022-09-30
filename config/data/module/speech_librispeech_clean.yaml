@@ -1,4 +1,4 @@
-_target_: src.data.module.speaker.SpeechRecognitionDataModuleConfig
+_target_: src.data.module.SpeechRecognitionDataModuleConfig
 
 # path to folder(s) containing train data
 train_shard_paths:

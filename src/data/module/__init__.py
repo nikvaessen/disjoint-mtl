@@ -1,0 +1,2 @@
+from .speech import SpeechRecognitionDataModuleConfig, SpeechRecognitionDataModule
+from .speaker import SpeakerRecognitionDataModuleConfig, SpeakerRecognitionDataModule

@@ -14,7 +14,10 @@ from typing import Union
 # implement division of 2 digits
 
 
-def _parse_digit(d: str) -> Union[float, int]:
+def _parse_digit(d: Union[str, int, float]) -> Union[float, int]:
+    if isinstance(d, int) or isinstance(d, float):
+        return d
+
     try:
         digit = int(d)
     except ValueError:
@@ -26,12 +29,22 @@ def _parse_digit(d: str) -> Union[float, int]:
     return digit
 
 
-def division_resolver(numerator: str, denominator: str) -> float:
-    return _parse_digit(numerator) / _parse_digit(denominator)
+def division_resolver(
+    numerator: Union[str, int, float], denominator: Union[str, int, float]
+) -> float:
+    numerator = _parse_digit(numerator)
+    denominator = _parse_digit(denominator)
+
+    return numerator / denominator
 
 
-def integer_division_resolver(numerator: str, denominator: str) -> int:
-    return int(_parse_digit(numerator) // _parse_digit(denominator))
+def integer_division_resolver(
+    numerator: Union[str, int, float], denominator: Union[str, int, float]
+) -> int:
+    numerator = _parse_digit(numerator)
+    denominator = _parse_digit(denominator)
+
+    return int(numerator // denominator)
 
 
 ########################################################################################
