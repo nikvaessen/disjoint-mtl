@@ -10,7 +10,7 @@ reset_weights: false
 freeze_cnn: true
 freeze_transformer: true  # this also freezes projector and rel. pos. emb
 num_steps_freeze_cnn: -1 # so always
-num_steps_freeze_transformer: 10_000
+num_steps_freeze_transformer: 2_000
 
 # if enabled, gradient checkpointing slows down iteration speed but saves memory
 use_gradient_checkpointing: true
@@ -18,4 +18,8 @@ use_gradient_checkpointing: true
 # head on top of wav2vec2 for speaker recognition
 head_cfg:
   _target_: src.networks.heads.LinearHeadConfig
+  blank_token_idx: ${optim.loss.ctc_blank_idx}
 
+  blank_initial_bias: 10
+  character_distribution_json: ${oc.env:LIBRISPEECH_DIR}/meta/character_distribution_train.json
+  character_vocabulary_json: ${oc.env:LIBRISPEECH_DIR}/meta/character_vocabulary.json
