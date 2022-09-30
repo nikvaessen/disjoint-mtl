@@ -28,17 +28,18 @@ from data_utility.pipe.builder import (
     SpeakerRecognitionDataPipeBuilder,
     SpeechRecognitionDataPipeBuilder,
 )
-from src.data.module.librispeech import (
-    LibriSpeechDataModuleConfig,
+from src.data.module.speech import (
+    SpeechRecognitionDataModuleConfig,
     LibriSpeechDataModule,
+    SpeechRecognitionDataModule,
 )
 from src.data.module.librispeech_disjoint import (
     DisjointedLibriSpeechDataModuleConfig,
     DisjointedLibriSpeechDataModule,
 )
-from src.data.module.voxceleb import (
-    VoxCelebDataModuleConfig,
-    VoxCelebDataModule,
+from src.data.module.speaker import (
+    SpeakerRecognitionDataModuleConfig,
+    SpeakerRecognitionDataModule,
 )
 from src.networks.wav2vec2.w2v2_speaker import (
     Wav2vec2ForSpeakerRecognitionConfig,
@@ -96,20 +97,23 @@ def construct_speaker_data_pipe_builders(cfg: DictConfig):
 def construct_data_module(cfg: DictConfig):
     dm_cfg = instantiate(cfg.data.module)
 
-    speech_dpb = construct_speech_data_pipe_builders(cfg)
-    speaker_dpb = construct_speaker_data_pipe_builders(cfg)
+    if isinstance(dm_cfg, SpeechRecognitionDataModuleConfig):
+        train_dpb, val_dpb, test_dpb = construct_speech_data_pipe_builders(cfg)
 
-    if isinstance(dm_cfg, LibriSpeechDataModuleConfig):
-        dm = LibriSpeechDataModule(
-            dm_cfg, speech_pipe_builders=speech_dpb, speaker_pipe_builders=speaker_dpb
+        dm = SpeechRecognitionDataModule(
+            dm_cfg,
+            train_pipe_builder=train_dpb,
+            val_pipe_builder=val_dpb,
+            test_pipe_builder=test_dpb,
         )
-    elif isinstance(dm_cfg, DisjointedLibriSpeechDataModuleConfig):
-        dm = DisjointedLibriSpeechDataModule(
-            dm_cfg, speech_pipe_builders=speech_dpb, speaker_pipe_builders=speaker_dpb
-        )
-    elif isinstance(dm_cfg, VoxCelebDataModuleConfig):
-        dm = VoxCelebDataModule(
-            dm_cfg, speech_pipe_builders=speech_dpb, speaker_pipe_builders=speaker_dpb
+    elif isinstance(dm_cfg, SpeakerRecognitionDataModuleConfig):
+        train_dpb, val_dpb, test_dpb = construct_speaker_data_pipe_builders(cfg)
+
+        dm = SpeakerRecognitionDataModule(
+            dm_cfg,
+            train_pipe_builder=train_dpb,
+            val_pipe_builder=val_dpb,
+            test_pipe_builder=test_dpb,
         )
     else:
         raise ValueError(f"no suitable constructor for {dm_cfg}")
@@ -126,9 +130,11 @@ def construct_speaker_recognition_module(
     network_cfg: Union[
         Wav2vec2ForSpeakerRecognitionConfig, WavLMForSpeakerRecognitionConfig
     ],
-    dm: Union[LibriSpeechDataModule],
+    dm: SpeakerRecognitionDataModule,
     loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
 ):
+    assert isinstance(dm, SpeakerRecognitionDataModule)
+
     # every speaker recognition network needs to be given these variables
     # for training purposes
     num_speakers = dm.get_num_train_speakers()
@@ -161,9 +167,11 @@ def construct_speech_recognition_module(
     network_cfg: Union[
         Wav2vec2ForSpeechRecognitionConfig, WavLMForSpeechRecognitionConfig
     ],
-    dm: Union[LibriSpeechDataModule],
+    dm: SpeechRecognitionDataModule,
     loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
 ):
+    assert isinstance(dm, SpeechRecognitionDataModule)
+
     # every speaker recognition network needs to be given these variables
     # for training purposes
     test_names = dm.get_test_names()
@@ -208,7 +216,7 @@ def init_model(cfg: DictConfig, network_class, kwargs: Dict):
 
 def construct_network_module(
     cfg: DictConfig,
-    dm: Union[LibriSpeechDataModule],
+    dm: Union[SpeechRecognitionDataModule, SpeakerRecognitionDataModule],
 ):
     # load loss function
     def loss_fn_constructor():

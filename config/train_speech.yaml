@@ -1,8 +1,7 @@
 defaults:
   - _self_
   - callbacks: speaker_default
-  - data/module: librispeech_speech
-  - data/speaker_datapipe: default_datapipe
+  - data/module: speech_librispeech960h
   - data/speech_datapipe: default_datapipe
   - network: speech_wav2vec2_linear
   - optim/algo: adam
