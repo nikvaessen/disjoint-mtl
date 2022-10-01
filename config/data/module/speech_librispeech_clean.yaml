@@ -1,5 +1,8 @@
 _target_: src.data.module.SpeechRecognitionDataModuleConfig
 
+# name of dataset
+name: ls_clean
+
 # path to folder(s) containing train data
 train_shard_paths:
   - ${oc.env:LIBRISPEECH_DIR}/shards/train-clean-100

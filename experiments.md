@@ -61,7 +61,7 @@ tag=ls_other
 ```bash
 python run_speech.py -m +experiments=speech_ctc_3st_freeze \
 data/module=speech_librispeech_960h \
-network=speech_wav2vec2_linear,speech_wavvlm_linear \
+network=speech_wav2vec2_linear \
 optim.algo.lr=1e-4 \
 hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=2 \
 hydra.launcher.timeout_min=4800 \
@@ -75,7 +75,7 @@ tag=ls960h
 ```bash
 python run_speech.py -m +experiments=speech_ctc_3st_freeze \
 data/module=speech_librispeech_clean \
-network=speech_wav2vec2_linear,speech_wavvlm_linear \
+network=speech_wav2vec2_linear \
 optim.algo.lr=1e-4 \
 hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=2 \
 hydra.launcher.timeout_min=4800 \
@@ -87,7 +87,7 @@ tag=ls_clean
 ```bash
 python run_speech.py -m +experiments=speech_ctc_3st_freeze \
 data/module=speech_librispeech_other \
-network=speech_wav2vec2_linear,speech_wavvlm_linear \
+network=speech_wav2vec2_linear \
 optim.algo.lr=1e-4 \
 hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=2 \
 hydra.launcher.timeout_min=4800 \

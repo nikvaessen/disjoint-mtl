@@ -25,6 +25,9 @@ from src.util.config_util import CastingConfig
 
 @dataclass
 class SpeakerRecognitionDataModuleConfig(CastingConfig):
+    # name of dataset
+    name: str
+
     # path to folder(s) containing train data
     train_shard_paths: List[pathlib.Path]
 
