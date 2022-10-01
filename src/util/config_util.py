@@ -8,7 +8,6 @@
 ########################################################################################
 
 import dataclasses
-import pathlib
 
 from enum import Enum
 from typing import TypeVar, Generic, Union
