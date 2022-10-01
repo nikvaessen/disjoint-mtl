@@ -32,7 +32,7 @@ class FreezeManager:
         self._should_unfreeze = False
 
     def on_train_start(self) -> None:
-        if self.is_frozen_at_init:
+        if self.is_frozen_at_init and self.num_steps_frozen != 0:
             for m in self.module:
                 freeze_module(m)
 
