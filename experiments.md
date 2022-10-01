@@ -56,40 +56,21 @@ tag=ls_other
 
 ## ASR
 
-### LibriSpeech 960h 
+### wav2vec2 with ls960, ls_clean, ls_other
 
 ```bash
-python run_speech.py -m +experiments=speech_ctc_3st_freeze \
-data/module=speech_librispeech_960h \
-network=speech_wav2vec2_linear \
-optim.algo.lr=1e-4 \
-hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=2 \
-hydra.launcher.timeout_min=4800 \
-tag=ls960h
+python run_speech.py -m +experiments=speech_ctc_3st_freeze\
+data/module=speech_librispeech_960h,speech_librispeech_clean,speech_librispeech_other \
+network=speech_wav2vec2_linear optim.algo.lr=1e-4 \
+hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=3 \
+hydra.launcher.timeout_min=4800
 ```
-
-### disjoint LibriSpeech
-
-#### clean
+### wavLM with ls960, ls_clean, ls_other
 
 ```bash
-python run_speech.py -m +experiments=speech_ctc_3st_freeze \
-data/module=speech_librispeech_clean \
-network=speech_wav2vec2_linear \
-optim.algo.lr=1e-4 \
-hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=2 \
-hydra.launcher.timeout_min=4800 \
-tag=ls_clean
-```
-
-#### other
-
-```bash
-python run_speech.py -m +experiments=speech_ctc_3st_freeze \
-data/module=speech_librispeech_other \
-network=speech_wav2vec2_linear \
-optim.algo.lr=1e-4 \
-hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=2 \
-hydra.launcher.timeout_min=4800 \
-tag=ls_other
+python run_speech.py -m +experiments=speech_ctc_3st_freeze\
+data/module=speech_librispeech_960h,speech_librispeech_clean,speech_librispeech_other \
+network=speech_wavlm_linear optim.algo.lr=1e-5 \
+hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=3 \
+hydra.launcher.timeout_min=4800
 ```
