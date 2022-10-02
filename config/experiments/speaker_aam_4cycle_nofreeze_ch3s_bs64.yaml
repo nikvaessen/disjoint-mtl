@@ -18,7 +18,7 @@ trainer:
 data:
   speaker_datapipe:
     train_dp:
-      chunk_size_sec: 1
+      chunk_size_sec: 3
       batch_size: 64
 
 network:
