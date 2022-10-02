@@ -4,30 +4,30 @@
 
 ```bash
 python run_speaker.py -m +experiments=speaker_aam_4cycle_nofreeze_ch3s_bs64 \
-data/module=speaker_librispeech_other \
-network=speaker_voxceleb,speaker_librispeech_960h,speaker_librispeech_clean,speaker_librispeech_other \
-hydra/launcher=slurm hydra.launcher.array_parallelism=2 hydra.launcher.timeout_min=1440
+network=speaker_wav2vec2_linear \
+data/module=speaker_voxceleb,speaker_librispeech_960h,speaker_librispeech_clean,speaker_librispeech_other \
+hydra/launcher=slurm hydra.launcher.array_parallelism=4 hydra.launcher.timeout_min=1440
 ```
 
 experiment with chunk size and batch size
 
 ```bash
 python run_speaker.py -m +experiments=speaker_aam_4cycle_nofreeze_ch3s_bs64 \
-data/module=speaker_librispeech_other \
-network=speaker_voxceleb, \
+data/module=speaker_voxceleb \
+network=speaker_wav2vec2_linear \
 data.speaker_datapipe.train_dp.batch_size=192 \
 data.speaker_datapipe.train_dp.chunk_size_sec=1 \
-hydra/launcher=slurm hydra.launcher.array_parallelism=2 hydra.launcher.timeout_min=1440
+hydra/launcher=slurm hydra.launcher.timeout_min=1440
 ```
 
 ```bash
 python run_speaker.py -m +experiments=speaker_aam_4cycle_nofreeze_ch3s_bs64 \
-data/module=speaker_librispeech_other \
-network=speaker_voxceleb, \
+data/module=speaker_voxceleb \
+network=speaker_wav2vec2_linear \
 data.speaker_datapipe.train_dp.batch_size=64 \
 data.speaker_datapipe.train_dp.chunk_size_sec=1 \
-trainer.max_steps=200_000
-hydra/launcher=slurm hydra.launcher.array_parallelism=2 hydra.launcher.timeout_min=1440
+trainer.max_steps=200_000 \
+hydra/launcher=slurm hydra.launcher.timeout_min=1440
 ```
 
 
