@@ -1,6 +1,7 @@
 ########################################################################################
 #
-# This file implement a datamodule for a speech recognition dataset.
+# This file implement a datamodule for a MTL dataset with disjoint data
+# by wrapping the speaker-only and speech-only data modules.
 #
 # Author(s): Nik Vaessen
 ########################################################################################
@@ -9,12 +10,13 @@ import json
 import pathlib
 
 from dataclasses import dataclass
-from typing import Optional, Tuple, List
+from typing import Optional, List
 
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.types import TRAIN_DATALOADERS, EVAL_DATALOADERS
 
-from data_utility.pipe.builder import SpeechRecognitionDataPipeBuilder
+from data_utility.eval.speaker.evaluator import SpeakerTrial
+from data_utility.pipe.builder import SpeakerRecognitionDataPipeBuilder
 from src.util.config_util import CastingConfig
 
 
@@ -23,7 +25,7 @@ from src.util.config_util import CastingConfig
 
 
 @dataclass
-class SpeechRecognitionDataModuleConfig(CastingConfig):
+class MTLDataModuleConfig(CastingConfig):
     # name of dataset
     name: str
 
@@ -36,8 +38,8 @@ class SpeechRecognitionDataModuleConfig(CastingConfig):
     # shard pattern
     shard_file_pattern: str
 
-    # path to meta file for speech info
-    char_vocab_json: pathlib.Path
+    # path to meta file for speaker info (ID for train and val)
+    speaker_json: pathlib.Path
 
     # name of each test set
     test_names: List[str]
@@ -45,20 +47,23 @@ class SpeechRecognitionDataModuleConfig(CastingConfig):
     # path to each shard of test set (only 1 dir each)
     test_shards: List[pathlib.Path]
 
+    # path to each trial list matching the test set
+    test_trials: List[pathlib.Path]
+
 
 ########################################################################################
 # implementation
 
 
-class SpeechRecognitionDataModule(LightningDataModule):
+class SpeakerRecognitionDataModule(LightningDataModule):
     def __init__(
         self,
-        cfg: SpeechRecognitionDataModuleConfig,
-        train_pipe_builder: SpeechRecognitionDataPipeBuilder,
-        val_pipe_builder: SpeechRecognitionDataPipeBuilder,
-        test_pipe_builder: SpeechRecognitionDataPipeBuilder,
+        cfg: SpeakerRecognitionDataModuleConfig,
+        train_pipe_builder: SpeakerRecognitionDataPipeBuilder,
+        val_pipe_builder: SpeakerRecognitionDataPipeBuilder,
+        test_pipe_builder: SpeakerRecognitionDataPipeBuilder,
     ):
-        super(SpeechRecognitionDataModule, self).__init__()
+        super(SpeakerRecognitionDataModule, self).__init__()
 
         self.cfg = cfg
 
@@ -67,46 +72,44 @@ class SpeechRecognitionDataModule(LightningDataModule):
         self.test_pipe_builder = test_pipe_builder
 
         # set _num_speakers and set speaker_to_idx on pipe builders
-        self._vocab_size = None
-        self._init_vocabulary()
+        self._num_speakers = None
+        self._init_speakers()
 
-        if not (len(self.cfg.test_names) == len(self.cfg.test_shards)):
-            raise ValueError("length of test names and test shards does not match")
+        if not (
+            len(self.cfg.test_names)
+            == len(self.cfg.test_shards)
+            == len(self.cfg.test_trials)
+        ):
+            raise ValueError("length of test names, shards, and trials does not match")
 
         # init in setup()
         self.train_dp = None
         self.val_dp = None
         self.test_dp_list = None
 
-    def _load_character_vocab_json(self):
-        with self.cfg.char_vocab_json.open("r") as f:
+    def _load_speakers_json(self):
+        with self.cfg.speaker_json.open("r") as f:
             return json.load(f)
 
-    def _init_vocabulary(self):
-        assert isinstance(self.train_pipe_builder, SpeechRecognitionDataPipeBuilder)
-        assert isinstance(self.val_pipe_builder, SpeechRecognitionDataPipeBuilder)
-        assert isinstance(self.test_pipe_builder, SpeechRecognitionDataPipeBuilder)
+    def _init_speakers(self):
+        assert isinstance(self.train_pipe_builder, SpeakerRecognitionDataPipeBuilder)
+        assert isinstance(self.val_pipe_builder, SpeakerRecognitionDataPipeBuilder)
+        assert isinstance(self.test_pipe_builder, SpeakerRecognitionDataPipeBuilder)
 
-        char_to_idx = self._load_character_vocab_json()["char_to_idx"]
+        speaker_to_idx = self._load_speakers_json()["speaker_to_idx"]
 
-        self.train_pipe_builder.set_char_to_idx(char_to_idx)
-        self.val_pipe_builder.set_char_to_idx(char_to_idx)
-        self.test_pipe_builder.set_char_to_idx(char_to_idx)
+        self._num_speakers = len(speaker_to_idx)
+        self.train_pipe_builder.set_speaker_to_idx(speaker_to_idx)
+        self.val_pipe_builder.set_speaker_to_idx(speaker_to_idx)
 
-        self._vocab_size = len(char_to_idx)
+    def get_num_train_speakers(self) -> int:
+        return self._num_speakers
+
+    def get_test_speaker_eval_list(self) -> List[List[SpeakerTrial]]:
+        return [SpeakerTrial.from_file(f) for f in self.cfg.test_trials]
 
     def get_test_names(self):
         return self.cfg.test_names
-
-    def get_vocab_size(self):
-        return self._vocab_size
-
-    def get_idx_to_char(self):
-        vocab_json = self._load_character_vocab_json()
-
-        idx_to_char = {int(k): v for k, v in vocab_json["idx_to_char"].items()}
-
-        return idx_to_char
 
     def setup(self, stage: Optional[str] = None) -> None:
         # train dp

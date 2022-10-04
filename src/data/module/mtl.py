@@ -1,6 +1,6 @@
 ########################################################################################
 #
-# This file implement a datamodule for a speaker recognition dataset.
+# This file implement a datamodule for a MTL dataset for speech and speaker recognition.
 #
 # Author(s): Nik Vaessen
 ########################################################################################
@@ -15,7 +15,9 @@ from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.types import TRAIN_DATALOADERS, EVAL_DATALOADERS
 
 from data_utility.eval.speaker.evaluator import SpeakerTrial
-from data_utility.pipe.builder import SpeakerRecognitionDataPipeBuilder
+from data_utility.pipe.builder import (
+    SpeechAndSpeakerRecognitionDataPipeBuilder,
+)
 from src.util.config_util import CastingConfig
 
 
@@ -24,7 +26,7 @@ from src.util.config_util import CastingConfig
 
 
 @dataclass
-class SpeakerRecognitionDataModuleConfig(CastingConfig):
+class MTLDataModuleConfig(CastingConfig):
     # name of dataset
     name: str
 
@@ -36,6 +38,9 @@ class SpeakerRecognitionDataModuleConfig(CastingConfig):
 
     # shard pattern
     shard_file_pattern: str
+
+    # path to meta file for speech info
+    char_vocab_json: pathlib.Path
 
     # path to meta file for speaker info (ID for train and val)
     speaker_json: pathlib.Path
@@ -54,25 +59,29 @@ class SpeakerRecognitionDataModuleConfig(CastingConfig):
 # implementation
 
 
-class SpeakerRecognitionDataModule(LightningDataModule):
+class MTLDataModule(LightningDataModule):
     def __init__(
         self,
-        cfg: SpeakerRecognitionDataModuleConfig,
-        train_pipe_builder: SpeakerRecognitionDataPipeBuilder,
-        val_pipe_builder: SpeakerRecognitionDataPipeBuilder,
-        test_pipe_builder: SpeakerRecognitionDataPipeBuilder,
+        cfg: MTLDataModuleConfig,
+        train_pipe_builder: SpeechAndSpeakerRecognitionDataPipeBuilder,
+        val_pipe_builder: SpeechAndSpeakerRecognitionDataPipeBuilder,
+        test_pipe_builder: SpeechAndSpeakerRecognitionDataPipeBuilder,
     ):
-        super(SpeakerRecognitionDataModule, self).__init__()
+        super(MTLDataModule, self).__init__()
 
         self.cfg = cfg
 
-        self.train_pipe_builder = train_pipe_builder
-        self.val_pipe_builder = val_pipe_builder
-        self.test_pipe_builder = test_pipe_builder
+        self.train_dpb = train_pipe_builder
+        self.val_dpb = val_pipe_builder
+        self.test_dpb = test_pipe_builder
 
         # set _num_speakers and set speaker_to_idx on pipe builders
         self._num_speakers = None
         self._init_speakers()
+
+        # set _num_speakers and set speaker_to_idx on pipe builders
+        self._vocab_size = None
+        self._init_vocabulary()
 
         if not (
             len(self.cfg.test_names)
@@ -91,15 +100,32 @@ class SpeakerRecognitionDataModule(LightningDataModule):
             return json.load(f)
 
     def _init_speakers(self):
-        assert isinstance(self.train_pipe_builder, SpeakerRecognitionDataPipeBuilder)
-        assert isinstance(self.val_pipe_builder, SpeakerRecognitionDataPipeBuilder)
-        assert isinstance(self.test_pipe_builder, SpeakerRecognitionDataPipeBuilder)
+        assert isinstance(self.train_dpb, SpeechAndSpeakerRecognitionDataPipeBuilder)
+        assert isinstance(self.val_dpb, SpeechAndSpeakerRecognitionDataPipeBuilder)
+        assert isinstance(self.test_dpb, SpeechAndSpeakerRecognitionDataPipeBuilder)
 
         speaker_to_idx = self._load_speakers_json()["speaker_to_idx"]
 
         self._num_speakers = len(speaker_to_idx)
-        self.train_pipe_builder.set_speaker_to_idx(speaker_to_idx)
-        self.val_pipe_builder.set_speaker_to_idx(speaker_to_idx)
+        self.train_dpb.set_speaker_to_idx(speaker_to_idx)
+        self.val_dpb.set_speaker_to_idx(speaker_to_idx)
+
+    def _load_character_vocab_json(self):
+        with self.cfg.char_vocab_json.open("r") as f:
+            return json.load(f)
+
+    def _init_vocabulary(self):
+        assert isinstance(self.train_dpb, SpeechAndSpeakerRecognitionDataPipeBuilder)
+        assert isinstance(self.val_dpb, SpeechAndSpeakerRecognitionDataPipeBuilder)
+        assert isinstance(self.test_dpb, SpeechAndSpeakerRecognitionDataPipeBuilder)
+
+        char_to_idx = self._load_character_vocab_json()["char_to_idx"]
+
+        self.train_dpb.set_char_to_idx(char_to_idx)
+        self.val_dpb.set_char_to_idx(char_to_idx)
+        self.test_dpb.set_char_to_idx(char_to_idx)
+
+        self._vocab_size = len(char_to_idx)
 
     def get_num_train_speakers(self) -> int:
         return self._num_speakers
@@ -110,32 +136,35 @@ class SpeakerRecognitionDataModule(LightningDataModule):
     def get_test_names(self):
         return self.cfg.test_names
 
+    def get_vocab_size(self):
+        return self._vocab_size
+
     def setup(self, stage: Optional[str] = None) -> None:
         # train dp
-        self.train_dp = self.train_pipe_builder.get_pipe(
+        self.train_dp = self.train_dpb.get_pipe(
             shard_dirs=self.cfg.train_shard_paths,
             shard_file_pattern=self.cfg.shard_file_pattern,
         )
 
         # val dp
-        self.val_dp = self.val_pipe_builder.get_pipe(
+        self.val_dp = self.val_dpb.get_pipe(
             shard_dirs=self.cfg.val_shard_paths,
             shard_file_pattern=self.cfg.shard_file_pattern,
         )
 
         # test dp
         self.test_dp_list = [
-            self.test_pipe_builder.get_pipe(
+            self.test_dpb.get_pipe(
                 shard_dirs=path, shard_file_pattern=self.cfg.shard_file_pattern
             )
             for path in self.cfg.test_shards
         ]
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
-        return self.train_pipe_builder.wrap_pipe(self.train_dp)
+        return self.train_dpb.wrap_pipe(self.train_dp)
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
-        return self.val_pipe_builder.wrap_pipe(self.val_dp)
+        return self.val_dpb.wrap_pipe(self.val_dp)
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
-        return [self.test_pipe_builder.wrap_pipe(dp) for dp in self.test_dp_list]
+        return [self.test_dpb.wrap_pipe(dp) for dp in self.test_dp_list]
