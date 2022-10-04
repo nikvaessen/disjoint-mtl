@@ -6,7 +6,7 @@ defaults:
   - override /data/speaker_datapipe: default_datapipe
   - override /network: speaker_wav2vec2_linear
   - override /optim/algo: adam
-  - override /optim/schedule: 4cycle
+  - override /optim/schedule: tri_stage
   - override /optim/loss: aam_softmax
   - override /trainer: trainer_gpu
 
@@ -18,8 +18,8 @@ trainer:
 data:
   speaker_datapipe:
     train_dp:
-      chunk_size_sec: 3
-      batch_size: 64
+      chunk_size_sec: 2
+      batch_size: 100
 
 network:
   freeze_transformer: False

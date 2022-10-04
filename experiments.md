@@ -6,6 +6,7 @@
 python run_speaker.py -m +experiments=speaker_aam_4cycle_nofreeze_ch3s_bs64 \
 network=speaker_wav2vec2_linear \
 data/module=speaker_voxceleb,speaker_librispeech_960h,speaker_librispeech_clean,speaker_librispeech_other \
+optim.algo.lr=1e-4,1.78e-4 \
 hydra/launcher=slurm hydra.launcher.array_parallelism=4 hydra.launcher.timeout_min=1440
 ```
 
