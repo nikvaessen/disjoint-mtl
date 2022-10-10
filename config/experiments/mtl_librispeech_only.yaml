@@ -16,10 +16,15 @@ trainer:
   precision: 16
 
 network:
-  freeze_transformer: False
-  head_cfg:
-    use_cosine_linear: false
+  freeze_cnn: true
+  freeze_transformer: true  # this also freezes projector and rel. pos. emb
+  num_steps_freeze_cnn: -1 # so always
+  num_steps_freeze_transformer: 2_000
+  speaker_head_cfg:
+    use_cosine_linear: true
 
 optim:
   algo:
     lr: 1e-4
+  loss:
+    use_cross_entropy: false
