@@ -1,3 +1,5 @@
+# @package _global_
+
 defaults:
   - override /callbacks: speaker_default
   - override /data/module: mtl_librispeech_960h
