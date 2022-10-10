@@ -52,3 +52,14 @@ network=speech_wavlm_linear optim.algo.lr=1e-5 \
 hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=3 \
 hydra.launcher.timeout_min=4800
 ```
+
+## MTL (joined)
+
+### wav2vec2 librispeech ls960
+
+```
+python run_mt_speech_speaker.py -m +experiments=mtl_librispeech_only \
+trainer.max_steps=100_000,320_000
+hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=2 \
+hydra.launcher.timeout_min=4800
+```
