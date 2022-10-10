@@ -1,9 +1,9 @@
-################################################################################
+########################################################################################
 #
 # Define a base lightning module for a speaker recognition network.
 #
 # Author(s): Nik Vaessen
-################################################################################
+########################################################################################
 
 import json
 import logging
@@ -26,7 +26,7 @@ from data_utility.eval.speaker.evaluator import (
 from data_utility.pipe.containers import SpeakerRecognitionBatch
 from src.networks.base_lightning_module import BaseLightningModule
 
-################################################################################
+########################################################################################
 # Definition of speaker recognition API
 
 # A logger for this file
@@ -53,7 +53,7 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
         # used to keep track of training/val accuracy
         self.metric_train_acc = torchmetrics.Accuracy()
         self.metric_train_loss = torchmetrics.MeanMetric()
-        self.metric_valid_acc = torchmetrics.Accuracy()
+        self.metric_val_acc = torchmetrics.Accuracy()
 
         # evaluator
         self.evaluator = CosineDistanceEvaluator(
@@ -106,7 +106,11 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
 
         self._log_train_acc(prediction, spk_label, batch_idx)
         self._log_train_loss(loss, batch_idx)
+        self._log_train_batch_info(batch)
 
+        return {"loss": loss}
+
+    def _log_train_batch_info(self, batch):
         with (pathlib.Path.cwd() / "train_batch_info.log").open("a") as f:
             print(
                 f"{batch.batch_size=} "
@@ -114,8 +118,6 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
                 f"{batch.id_tensor.shape=}",
                 file=f,
             )
-
-        return {"loss": loss}
 
     def _log_train_acc(self, prediction: t.Tensor, label: t.Tensor, batch_idx: int):
         self.metric_train_acc(prediction, label)
@@ -163,18 +165,18 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
         logits_prediction = self.compute_speaker_prediction(embedding)
         loss, prediction = self.loss_fn(logits_prediction, label)
 
-        self.metric_valid_acc(prediction, label)
+        self.metric_val_acc(prediction, label)
         self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
 
     def validation_epoch_end(self, outputs: List[Any]) -> None:
         self.log_dict(
             {
-                "val_acc": self.metric_valid_acc.compute(),
+                "val_acc": self.metric_val_acc.compute(),
             },
             on_epoch=True,
             prog_bar=True,
         )
-        self.metric_valid_acc.reset()
+        self.metric_val_acc.reset()
 
     def test_step(
         self,

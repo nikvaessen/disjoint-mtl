@@ -1,2 +1,3 @@
 from .speech import SpeechRecognitionDataModuleConfig, SpeechRecognitionDataModule
 from .speaker import SpeakerRecognitionDataModuleConfig, SpeakerRecognitionDataModule
+from .mtl import MTLDataModuleConfig, MTLDataModule

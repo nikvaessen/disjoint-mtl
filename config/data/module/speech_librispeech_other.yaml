@@ -14,7 +14,7 @@ val_shard_paths:
 # shard pattern
 shard_file_pattern: "*.*.tar*"
 
-# path to meta file for speaker info (ID for train and val)
+# path to meta file for mapping vocabulary to predicton IDs
 char_vocab_json: ${oc.env:LIBRISPEECH_DIR}/meta/character_vocabulary.json
 
 # name of each test set

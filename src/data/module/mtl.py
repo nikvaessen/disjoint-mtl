@@ -127,6 +127,13 @@ class MTLDataModule(LightningDataModule):
 
         self._vocab_size = len(char_to_idx)
 
+    def get_idx_to_char(self):
+        vocab_json = self._load_character_vocab_json()
+
+        idx_to_char = {int(k): v for k, v in vocab_json["idx_to_char"].items()}
+
+        return idx_to_char
+
     def get_num_train_speakers(self) -> int:
         return self._num_speakers
 

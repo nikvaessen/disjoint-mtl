@@ -1,4 +1,4 @@
-_target_: src.optim.loss.mt_speech_speaker_loss.MtSpeechAndSpeakerLoss
+_target_: src.optim.loss.mt_speech_speaker_loss.MTSpeechAndSpeakerLoss
 
 # if True, use CE loss for speaker recognition, otherwise AAM loss
 use_cross_entropy: true  # ignore aam_scale and aam_margin values if true

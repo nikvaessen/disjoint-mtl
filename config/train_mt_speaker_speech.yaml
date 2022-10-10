@@ -1,19 +1,13 @@
 defaults:
-  - _self_ 
+  - _self_
   - callbacks: speaker_default
-  - data: mt_vox2_libri
-  - speaker/pipeline: base_wav_chunked
-  - speaker/dataloader: speaker
-  - speech/dataloader: speech
-  - speech/pipeline: base_wav
-  - speech/tokenizer: default
-  - network: mt_wav2vec2
-  - network/regularisation: wav2vec2_default_asr
+  - data/module: mtl_librispeech_960h
+  - data/pipe: mtl_datapipe
+  - network: mtl_wav2vec2_linear
   - optim/algo: adam
-  - optim/schedule: constant
+  - optim/schedule: tri_stage
   - optim/loss: mt_speech_speaker_loss
-  - trainer: trainer
-
+  - trainer: trainer_gpu
 
 # root directory with subfolders containing the canonical dataset(s)
 data_folder: ${oc.env:DATA_FOLDER}

@@ -18,12 +18,11 @@ from src.optim.loss.mt_weighting import (
     StaticScaling,
 )
 
-
 ################################################################################
 # implementation
 
 
-class MtSpeechAndSpeakerLoss(nn.Module):
+class MTSpeechAndSpeakerLoss(nn.Module):
     def __init__(
         self,
         use_cross_entropy: bool = True,  # ignore aam_scale and aam_margin values if true

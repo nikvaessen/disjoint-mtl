@@ -1,4 +1,4 @@
-_target_: src.data.module.SpeechRecognitionDataModuleConfig
+_target_: src.data.module.MTLDataModuleConfig
 
 # name of dataset
 name: ls960h
@@ -21,12 +21,25 @@ shard_file_pattern: "*.*.tar*"
 # path to meta file for mapping vocabulary to predicton IDs
 char_vocab_json: ${oc.env:LIBRISPEECH_DIR}/meta/character_vocabulary.json
 
+# path to meta file for speaker info (ID for train and val)
+speaker_json: ${oc.env:LIBRISPEECH_DIR}/meta/speakers_train.json
+
 # name of each test set
 test_names:
   - ls_dev_clean
   - ls_dev_other
+  - ls_test_clean
+  - ls_test_other
 
 # path to each shard of test set (only 1 dir each)
 test_shards:
   - ${oc.env:LIBRISPEECH_DIR}/shards/dev-clean
   - ${oc.env:LIBRISPEECH_DIR}/shards/dev-other
+  - ${oc.env:LIBRISPEECH_DIR}/shards/test-clean
+  - ${oc.env:LIBRISPEECH_DIR}/shards/test-other
+
+# path to each trial list matching the test set
+test_trials:
+  - ${oc.env:VOXCELEB_DIR}/meta/trials_dev.txt
+  - ${oc.env:LIBRISPEECH_DIR}/meta/trials_dev_clean.txt
+  - ${oc.env:LIBRISPEECH_DIR}/meta/trials_dev_other.txt

@@ -1,13 +1,11 @@
-################################################################################
+########################################################################################
 #
 # Define a base lightning module for a speech recognition network.
 #
 # Author(s): Nik Vaessen
-################################################################################
+########################################################################################
 
-import json
 import logging
-import os
 import pathlib
 
 from abc import abstractmethod
@@ -18,7 +16,6 @@ import torchmetrics
 
 import torch as t
 
-from tqdm import tqdm
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig
 
@@ -30,7 +27,7 @@ from data_utility.pipe.containers import SpeechRecognitionBatch
 from src.networks.base_lightning_module import BaseLightningModule
 from src.optim.loss.ctc_loss import CtcLoss
 
-################################################################################
+########################################################################################
 # Definition of speaker recognition API
 
 # A logger for this file
@@ -50,7 +47,7 @@ class SpeechRecognitionLightningModule(BaseLightningModule):
 
         if not isinstance(self.loss_fn, CtcLoss):
             raise ValueError(
-                f"expected loss class {CtcLoss}, " f"got {self.loss_fn.__class__}"
+                f"expected loss class {CtcLoss}, got {self.loss_fn.__class__}"
             )
 
         # input arguments
@@ -124,40 +121,66 @@ class SpeechRecognitionLightningModule(BaseLightningModule):
 
             train_wer = calculate_wer(predicted_transcriptions, label_transcriptions)
 
-            # log training loss
-            self.metric_train_loss(loss.detach().cpu().item())
-            self.metric_train_wer(train_wer)
-
-            if batch_idx % 5000 == 0:
-                with (pathlib.Path.cwd() / "train_predictions.log").open("a") as f:
-                    for idx, (pred, gt) in enumerate(
-                        zip(predicted_transcriptions, label_transcriptions)
-                    ):
-                        print(f"{idx:>3d}: {batch.keys[idx]}", file=f)
-                        print(f"{idx:>3d}: prediction=`{pred}`", file=f)
-                        print(f"{idx:>3d}:      label=`{gt}`", file=f)
-                    print(
-                        f"{train_wer=}\n",
-                        end="\n\n",
-                        file=f,
-                        flush=True,
-                    )
-
-            if batch_idx % 100 == 0:
-                self.log_dict(
-                    {
-                        "train_loss": self.metric_train_loss.compute(),
-                        "train_wer": self.metric_train_wer.compute(),
-                    },
-                    on_step=True,
-                    on_epoch=False,
-                    prog_bar=True,
-                )
-
-                self.metric_train_loss.reset()
-                self.metric_train_wer.reset()
+            self._log_train_predictions(
+                batch,
+                batch_idx,
+                predicted_transcriptions,
+                label_transcriptions,
+                train_wer,
+            )
+            self._log_train_wer(train_wer, batch_idx)
+            self._log_train_loss(loss, batch_idx)
 
         return loss
+
+    def _log_train_predictions(
+        self,
+        batch,
+        batch_idx,
+        predicted_transcriptions,
+        label_transcriptions,
+        train_wer,
+    ):
+        if batch_idx % 5000 == 0:
+            with (pathlib.Path.cwd() / "train_predictions.log").open("a") as f:
+                for idx, (pred, gt) in enumerate(
+                    zip(predicted_transcriptions, label_transcriptions)
+                ):
+                    print(f"{idx:>3d}: {batch.keys[idx]}", file=f)
+                    print(f"{idx:>3d}: prediction=`{pred}`", file=f)
+                    print(f"{idx:>3d}:      label=`{gt}`", file=f)
+                print(
+                    f"{train_wer=}\n",
+                    end="\n\n",
+                    file=f,
+                    flush=True,
+                )
+
+    def _log_train_wer(self, train_wer: float, batch_idx: int):
+        self.metric_train_wer(train_wer)
+
+        if batch_idx % 100 == 0:
+            self.log(
+                "train_wer",
+                self.metric_train_wer.compute(),
+                on_step=True,
+                on_epoch=False,
+                prog_bar=True,
+            )
+            self.metric_train_wer.reset()
+
+    def _log_train_loss(self, loss: t.Tensor, batch_idx: int):
+        self.metric_train_loss(loss.detach())
+
+        if batch_idx % 100 == 0:
+            self.log(
+                "train_loss",
+                self.metric_train_loss.compute(),
+                on_step=True,
+                on_epoch=False,
+                prog_bar=True,
+            )
+            self.metric_train_loss.reset()
 
     def validation_step(
         self,
