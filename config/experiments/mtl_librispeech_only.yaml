@@ -1,13 +1,11 @@
-# @package _global_
-
 defaults:
   - override /callbacks: speaker_default
-  - override /data/module: speaker_voxceleb
-  - override /data/speaker_datapipe: default_datapipe
-  - override /network: speaker_wav2vec2_linear
+  - override /data/module: mtl_librispeech_960h
+  - override /data/pipe: mtl_datapipe
+  - override /network: mtl_wav2vec2_linear
   - override /optim/algo: adam
   - override /optim/schedule: tri_stage
-  - override /optim/loss: aam_softmax
+  - override /optim/loss: mt_speech_speaker_loss
   - override /trainer: trainer_gpu
 
 trainer:
@@ -18,10 +16,8 @@ trainer:
 network:
   freeze_transformer: False
   head_cfg:
-    use_cosine_linear: true
+    use_cosine_linear: false
 
 optim:
-  loss:
-    use_cross_entropy: false
   algo:
     lr: 1e-4

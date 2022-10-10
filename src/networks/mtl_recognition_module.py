@@ -428,7 +428,7 @@ class MTLLightningModule(BaseLightningModule):
             len(speaker_embedding.shape) == 1
             and speaker_embedding.shape[0] == self.speaker_embedding_size
         ):
-            embedding = speaker_embedding[None, :]
+            speaker_embedding = speaker_embedding[None, :]
 
         assert len(speaker_embedding.shape) == 2
         assert speaker_embedding.shape[0] == batch.batch_size
@@ -439,7 +439,7 @@ class MTLLightningModule(BaseLightningModule):
         return {
             "transcription": predicted_transcriptions,
             "ground_truth": label_transcriptions,
-            "speaker_embedding": speaker_embedding,
+            "embedding": speaker_embedding,
             "sample_id": batch.keys,
         }
 
