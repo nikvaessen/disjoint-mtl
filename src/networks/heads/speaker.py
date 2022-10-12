@@ -98,10 +98,15 @@ class LinearProjectionHead(SpeakerRecognitionHead):
 
     def compute_embedding(self, sequence: t.Tensor) -> t.Tensor:
         projected_sequence = self.projection_layer(sequence)
+        num_frames = projected_sequence.shape[1]
 
-        if self.training and self.cfg.enable_train_chunk:
+        if (
+            self.training
+            and self.cfg.enable_train_chunk
+            and num_frames > self.cfg.train_random_chunk_size
+        ):
             min_idx = 0
-            max_idx = projected_sequence.shape[1] - self.cfg.train_random_chunk_size - 1
+            max_idx = num_frames - self.cfg.train_random_chunk_size - 1
 
             start_idx = t.randint(low=min_idx, high=max_idx, size=())
             stop_idx = start_idx + self.cfg.train_random_chunk_size
