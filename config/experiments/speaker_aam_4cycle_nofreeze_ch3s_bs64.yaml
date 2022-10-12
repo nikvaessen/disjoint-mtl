@@ -21,7 +21,5 @@ network:
     use_cosine_linear: true
 
 optim:
-  loss:
-    use_cross_entropy: false
   algo:
     lr: 1e-4
