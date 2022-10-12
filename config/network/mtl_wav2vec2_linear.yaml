@@ -20,6 +20,9 @@ speaker_head_cfg:
   drop_prob: 0.05
   use_cosine_linear: false
 
+  enable_train_chunk: true
+  train_random_chunk_size: 40 # ~25 ms per frame. 40==1 second chunk size
+
 speech_head_cfg:
   _target_: src.networks.heads.LinearHeadConfig
   blank_token_idx: ${optim.loss.ctc_blank_idx}

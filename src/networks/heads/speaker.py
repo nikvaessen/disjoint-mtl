@@ -4,6 +4,7 @@
 #
 # Author(s): Nik Vaessen
 ########################################################################################
+
 from typing import Union
 
 from abc import abstractmethod
@@ -48,9 +49,18 @@ class SpeakerRecognitionHead(t.nn.Module):
 
 @dataclass
 class LinearProjectionHeadConfig(CastingConfig):
+    # settings related to architecture
     projection_layer_dim: int
     drop_prob: float
+
+    # settings related to loss-function
     use_cosine_linear: bool  # set to true when using aam-softmax loss
+
+    # regularization settings
+
+    # amount of frames in embedding sequence to use while in train mode.
+    enable_train_chunk: bool
+    train_random_chunk_size: int  # ~25 ms per frame. 40==1 second chunk size
 
 
 class LinearProjectionHead(SpeakerRecognitionHead):
@@ -88,7 +98,17 @@ class LinearProjectionHead(SpeakerRecognitionHead):
 
     def compute_embedding(self, sequence: t.Tensor) -> t.Tensor:
         projected_sequence = self.projection_layer(sequence)
-        embedding = t.mean(projected_sequence, dim=1)
+
+        if self.training and self.cfg.enable_train_chunk:
+            min_idx = 0
+            max_idx = projected_sequence.shape[1] - self.cfg.train_random_chunk_size - 1
+
+            start_idx = t.randint(min_idx, max_idx)
+            stop_idx = start_idx + self.cfg.train_random_chunk_size
+
+            embedding = t.mean(projected_sequence[:, start_idx:stop_idx, :], dim=1)
+        else:
+            embedding = t.mean(projected_sequence, dim=1)
 
         return embedding
 

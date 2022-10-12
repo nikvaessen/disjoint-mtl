@@ -2,7 +2,7 @@ defaults:
   - _self_
   - callbacks: speaker_default
   - data/module: speaker_voxceleb
-  - data/speaker_datapipe: default_datapipe
+  - data/pipe: speaker_datapipe
   - network: speaker_wav2vec2_linear
   - optim/algo: adam
   - optim/schedule: constant

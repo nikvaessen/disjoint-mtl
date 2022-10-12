@@ -1,5 +1,5 @@
 train_dp:
-  _target_: data_utility.pipe.builder.SpeechRecognitionDataPipeBuilderConfig
+  _target_: data_utility.pipe.builder.SpeakerRecognitionDataPipeBuilderConfig
 
   # potential compression of shards
   tar_read_mode: 'r'  # depends on compression or not
@@ -8,6 +8,10 @@ train_dp:
   shuffle_buffer_before: 500
   shuffle_buffer_after: 10
   bucket_buffer: 15
+
+  # chunk
+  chunk_strategy: none
+  chunk_size_sec: null
 
   # batching
   max_tokens: 3_200_000
@@ -16,9 +20,11 @@ train_dp:
   # logic for giving each worker equal number of data
   allow_partial_shards: true
   num_workers: 5
+  drop_last: true
+
 
 val_dp:
-  _target_: data_utility.pipe.builder.SpeechRecognitionDataPipeBuilderConfig
+  _target_: data_utility.pipe.builder.SpeakerRecognitionDataPipeBuilderConfig
 
   # potential compression of shards
   tar_read_mode: 'r'  # depends on compression or not
@@ -27,17 +33,22 @@ val_dp:
   shuffle_buffer_before: 500
   shuffle_buffer_after: 10
   bucket_buffer: 15
+
+  # chunk
+  chunk_strategy: none
+  chunk_size_sec: null
 
   # batching
   batch_size: 8
-  drop_last: false
 
   # logic for giving each worker equal number of data
   allow_partial_shards: true
   num_workers: 1
+  drop_last: false
+
 
 test_dp:
-  _target_: data_utility.pipe.builder.SpeechRecognitionDataPipeBuilderConfig
+  _target_: data_utility.pipe.builder.SpeakerRecognitionDataPipeBuilderConfig
 
   # potential compression of shards
   tar_read_mode: 'r'  # depends on compression or not
@@ -47,11 +58,15 @@ test_dp:
   shuffle_buffer_after: 10
   bucket_buffer: 15
 
+  # chunk
+  chunk_strategy: none
+  chunk_size_sec: null
+
   # batching
   batch_size: 1
-  drop_last: false
 
   # logic for giving each worker equal number of data
   allow_partial_shards: true
   num_workers: 1
+  drop_last: false
 
