@@ -31,6 +31,15 @@ trainer.max_steps=200_000 \
 hydra/launcher=slurm hydra.launcher.timeout_min=1440
 ```
 
+experiment with chunking within wav2vec2
+
+```
+python run_speaker.py +experiments=speaker_aam_4cycle_nofreeze_ch3s_bs64 \
+data/pipe=speaker_datapipe_whole \
+network.head_cfg.train_random_chunk_size=20,40,80,120,
+network.head_cfg.enable_train_chunk=true
+hydra/launcher=slurm hydra.launcher.array_parallelism=4 hydra.launcher.timeout_min=1440
+```
 
 ## ASR
 
