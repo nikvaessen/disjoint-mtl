@@ -72,3 +72,16 @@ trainer.max_steps=100_000,320_000 \
 hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=2 \
 hydra.launcher.timeout_min=4800
 ```
+
+with chunking speaker head
+
+```
+python run_mt_speech_speaker.py -m +experiments=mtl_librispeech_only \
+trainer.max_steps=100_000 \
+network.speaker_head_cfg.train_random_chunk_size=20,40,80,120 \
+network.speaker_head_cfg.enable_train_chunk=true \
+hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=4 \
+hydra.launcher.timeout_min=4800
+```
+
+

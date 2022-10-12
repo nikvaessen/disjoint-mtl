@@ -103,7 +103,7 @@ class LinearProjectionHead(SpeakerRecognitionHead):
             min_idx = 0
             max_idx = projected_sequence.shape[1] - self.cfg.train_random_chunk_size - 1
 
-            start_idx = t.randint(min_idx, max_idx)
+            start_idx = t.randint(low=min_idx, high=max_idx, size=())
             stop_idx = start_idx + self.cfg.train_random_chunk_size
 
             embedding = t.mean(projected_sequence[:, start_idx:stop_idx, :], dim=1)
