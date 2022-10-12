@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - callbacks: speaker_default
+  - callbacks: mt_default
   - data/module: mtl_librispeech_960h
   - data/pipe: mtl_datapipe
   - network: mtl_wav2vec2_linear

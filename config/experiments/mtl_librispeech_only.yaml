@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - override /callbacks: speaker_default
+  - override /callbacks: mt_default
   - override /data/module: mtl_librispeech_960h
   - override /data/pipe: mtl_datapipe
   - override /network: mtl_wav2vec2_linear
