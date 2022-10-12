@@ -39,7 +39,8 @@ val_dp:
   chunk_size_sec: null
 
   # batching
-  batch_size: 8
+  max_tokens: 3_200_000
+  max_len: 320_000
 
   # logic for giving each worker equal number of data
   allow_partial_shards: true
