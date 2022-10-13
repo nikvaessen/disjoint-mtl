@@ -38,8 +38,7 @@ python run_speaker.py -m +experiments=speaker_aam_4cycle_nofreeze_ch3s_bs64,spea
 data/pipe=speaker_datapipe_whole \
 network.head_cfg.train_random_chunk_size=40,120 \
 network.head_cfg.enable_train_chunk=true \
-trainer.accumulate_grad_batches=2 data.pipe.train_dp.max_tokens=1_600_000 \
-hydra/launcher=slurm hydra.launcher.array_parallelism=4 hydra.launcher.timeout_min=2880
+hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=4 hydra.launcher.timeout_min=1440
 ```
 
 ## ASR
