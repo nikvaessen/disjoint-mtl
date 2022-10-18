@@ -10,7 +10,7 @@ optim.algo.lr=1e-4,1.78e-4 \
 hydra/launcher=slurm hydra.launcher.array_parallelism=4 hydra.launcher.timeout_min=1440
 ```
 
-experiment with chunk size and batch size
+### experiment with chunk size and batch size
 
 ```bash
 python run_speaker.py -m +experiments=speaker_aam_4cycle_nofreeze_ch3s_bs64 \
@@ -31,7 +31,7 @@ trainer.max_steps=200_000 \
 hydra/launcher=slurm hydra.launcher.timeout_min=1440
 ```
 
-experiment with chunking within wav2vec2
+### experiment with chunking within wav2vec2
 
 ```
 python run_speaker.py -m +experiments=speaker_aam_4cycle_nofreeze_ch3s_bs64,speaker_ce_4cycle_nofreeze_ch3s_bs64 \
@@ -40,6 +40,30 @@ network.head_cfg.train_random_chunk_size=40,120 \
 network.head_cfg.enable_train_chunk=true \
 hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=4 hydra.launcher.timeout_min=1440
 ```
+
+### experiments with different heads
+
+```
+python run_speaker.py -m +experiments=speaker_aam_4cycle_nofreeze_ch3s_bs64 \
+network=speaker_wav2vec2_linear network.head_cfg.use_projection_layer=false \
+project_name=speakers_heads \
+hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=4 hydra.launcher.timeout_min=1440
+```
+
+```
+python run_speaker.py -m +experiments=speaker_aam_4cycle_nofreeze_ch3s_bs64 \
+network=speaker_wav2vec2_linear network.head_cfg.projection_layer_dim=64,128,256,512,1024 \
+project_name=speakers_heads \
+hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=4 hydra.launcher.timeout_min=1440
+```
+
+```
+python run_speaker.py -m +experiments=speaker_aam_4cycle_nofreeze_ch3s_bs64 \
+network=speaker_wav2vec2_xvector,speaker_wav2vec2_ecapa \
+project_name=speakers_heads \
+hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=4 hydra.launcher.timeout_min=1440
+```
+
 
 ## ASR
 

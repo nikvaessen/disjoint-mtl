@@ -74,6 +74,11 @@ class LinearProjectionHead(SpeakerRecognitionHead):
         super().__init__()
 
         self.cfg = cfg
+        self._embedding_size = (
+            self.cfg.projection_layer_dim
+            if self.cfg.use_projection_layer
+            else representation_dim
+        )
 
         if self.cfg.use_projection_layer:
             self.projection_layer = t.nn.Sequential(
@@ -89,12 +94,12 @@ class LinearProjectionHead(SpeakerRecognitionHead):
 
         if self.cfg.use_cosine_linear:
             self.classification_layer = CosineLinear(
-                in_features=self.cfg.projection_layer_dim,
+                in_features=self._embedding_size,
                 out_features=classification_dim,
             )
         else:
             self.classification_layer = t.nn.Linear(
-                in_features=self.cfg.projection_layer_dim,
+                in_features=self._embedding_size,
                 out_features=classification_dim,
             )
 
@@ -124,7 +129,7 @@ class LinearProjectionHead(SpeakerRecognitionHead):
 
     @property
     def speaker_embedding_size(self):
-        return self.cfg.projection_layer_dim
+        return self._embedding_size
 
 
 ########################################################################################
@@ -136,8 +141,6 @@ class XvectorHeadConfig(CastingConfig):
     # settings related to loss-function
     use_cosine_linear: bool  # set to true when using aam-softmax loss
 
-    classifier_cfg: LinearProjectionHeadConfig
-
 
 class XvectorHead(SpeakerRecognitionHead):
     def __init__(
@@ -146,27 +149,36 @@ class XvectorHead(SpeakerRecognitionHead):
         super().__init__()
 
         self.cfg = cfg
-        self.cfg.classifier_cfg.use_cosine_linear = self.cfg.use_cosine_linear
 
-        self.xvector = xvector.Xvector(in_channels=representation_dim)
-        # remove stat pooling and linear layer at the end of xvector
-        del self.xvector.blocks[-2:]
-
-        self.classifier = LinearProjectionHead(
-            self.cfg.classifier_cfg, 1500, classification_dim
+        self.xvector = xvector.Xvector(
+            in_channels=representation_dim,
         )
 
+        if self.cfg.use_cosine_linear:
+            self.classification_layer = CosineLinear(
+                in_features=512,
+                out_features=classification_dim,
+            )
+        else:
+            self.classification_layer = t.nn.Linear(
+                in_features=5125,
+                out_features=classification_dim,
+            )
+
     def compute_prediction(self, embedding: t.Tensor) -> t.Tensor:
-        return self.classifier.compute_prediction(embedding)
+        return self.classification_layer(embedding)
 
     def compute_embedding(self, sequence: t.Tensor) -> t.Tensor:
-        tdnn_output = self.xvector(sequence)
-        embedding = self.classifier.compute_embedding(tdnn_output)
+        embedding = self.xvector(sequence)
+
+        if len(embedding.shape) == 3 and embedding.shape[1] == 1:
+            embedding = t.squeeze(embedding, dim=1)
+
         return embedding
 
     @property
     def speaker_embedding_size(self):
-        return self.classifier.speaker_embedding_size
+        return 512
 
 
 ########################################################################################
