@@ -5,7 +5,9 @@ train_dp:
   tar_read_mode: 'r'  # depends on compression or not
 
   # parameters determining randomness
-  shuffle_buffer: 256
+  shuffle_buffer_before: 256
+  shuffle_buffer_after: 10
+  bucket_buffer: null
 
   # chunk
   chunk_strategy: random
@@ -27,7 +29,9 @@ val_dp:
   tar_read_mode: 'r'  # depends on compression or not
 
   # parameters determining randomness
-  shuffle_buffer: 1
+  shuffle_buffer_before: 1
+  shuffle_buffer_after: 1
+  bucket_buffer: null
 
   # chunk
   chunk_strategy: start
@@ -49,7 +53,9 @@ test_dp:
   tar_read_mode: 'r'  # depends on compression or not
 
   # parameters determining randomness
-  shuffle_buffer: 1
+  shuffle_buffer_before: 1
+  shuffle_buffer_after: 1
+  bucket_buffer: null
 
   # chunk
   chunk_strategy: none

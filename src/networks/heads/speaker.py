@@ -50,13 +50,14 @@ class SpeakerRecognitionHead(t.nn.Module):
 @dataclass
 class LinearProjectionHeadConfig(CastingConfig):
     # settings related to architecture
+    use_projection_layer: bool
     projection_layer_dim: int
-    drop_prob: float
 
     # settings related to loss-function
     use_cosine_linear: bool  # set to true when using aam-softmax loss
 
     # regularization settings
+    drop_prob: float
 
     # amount of frames in embedding sequence to use while in train mode.
     enable_train_chunk: bool
@@ -74,13 +75,17 @@ class LinearProjectionHead(SpeakerRecognitionHead):
 
         self.cfg = cfg
 
-        self.projection_layer = t.nn.Sequential(
-            t.nn.Linear(
-                in_features=representation_dim,
-                out_features=self.cfg.projection_layer_dim,
-            ),
-            t.nn.Dropout(p=self.cfg.drop_prob),
-        )
+        if self.cfg.use_projection_layer:
+            self.projection_layer = t.nn.Sequential(
+                t.nn.Linear(
+                    in_features=representation_dim,
+                    out_features=self.cfg.projection_layer_dim,
+                ),
+                t.nn.Dropout(p=self.cfg.drop_prob),
+                t.nn.LeakyReLU(),
+            )
+        else:
+            self.projection_layer = t.nn.Identity()
 
         if self.cfg.use_cosine_linear:
             self.classification_layer = CosineLinear(
@@ -128,7 +133,10 @@ class LinearProjectionHead(SpeakerRecognitionHead):
 
 @dataclass
 class XvectorHeadConfig(CastingConfig):
+    # settings related to loss-function
     use_cosine_linear: bool  # set to true when using aam-softmax loss
+
+    classifier_cfg: LinearProjectionHeadConfig
 
 
 class XvectorHead(SpeakerRecognitionHead):
@@ -138,23 +146,36 @@ class XvectorHead(SpeakerRecognitionHead):
         super().__init__()
 
         self.cfg = cfg
+        self.cfg.classifier_cfg.use_cosine_linear = self.cfg.use_cosine_linear
 
         self.xvector = xvector.Xvector(in_channels=representation_dim)
-        # self.classifier = ...
+        # remove stat pooling and linear layer at the end of xvector
+        del self.xvector.blocks[-2:]
+
+        self.classifier = LinearProjectionHead(
+            self.cfg.classifier_cfg, 1500, classification_dim
+        )
 
     def compute_prediction(self, embedding: t.Tensor) -> t.Tensor:
-        raise NotImplemented()
+        return self.classifier.compute_prediction(embedding)
 
     def compute_embedding(self, sequence: t.Tensor) -> t.Tensor:
-        raise NotImplemented()
+        tdnn_output = self.xvector(sequence)
+        embedding = self.classifier.compute_embedding(tdnn_output)
+        return embedding
+
+    @property
+    def speaker_embedding_size(self):
+        return self.classifier.speaker_embedding_size
 
 
 ########################################################################################
 # ECAPA-TDNN as head
 
 
-@dataclass()
+@dataclass
 class EcapaTdnnHeadConfig(CastingConfig):
+    # settings related to loss-function
     use_cosine_linear: bool  # set to true when using aam-softmax loss
 
 
@@ -166,11 +187,33 @@ class EcapaTdnnHead(SpeakerRecognitionHead):
 
         self.cfg = cfg
 
+        self.ecapa = ecapa.ECAPA_TDNN(input_size=representation_dim)
+
+        if self.cfg.use_cosine_linear:
+            self.classification_layer = CosineLinear(
+                in_features=192,
+                out_features=classification_dim,
+            )
+        else:
+            self.classification_layer = t.nn.Linear(
+                in_features=192,
+                out_features=classification_dim,
+            )
+
     def compute_prediction(self, embedding: t.Tensor) -> t.Tensor:
-        raise NotImplemented()
+        return self.classification_layer(embedding)
 
     def compute_embedding(self, sequence: t.Tensor) -> t.Tensor:
-        raise NotImplemented()
+        embedding = self.ecapa(sequence)
+
+        if len(embedding.shape) == 3 and embedding.shape[1] == 1:
+            embedding = t.squeeze(embedding, dim=1)
+
+        return embedding
+
+    @property
+    def speaker_embedding_size(self):
+        return 192
 
 
 ########################################################################################

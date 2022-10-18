@@ -15,12 +15,7 @@ use_gradient_checkpointing: true
 
 # head on top of wav2vec2 for speaker recognition
 head_cfg:
-  _target_: src.networks.heads.LinearProjectionHeadConfig
-  use_projection_layer: true
-  projection_layer_dim: 128
-  drop_prob: 0.05
-  use_cosine_linear: false
+  _target_: src.networks.heads.EcapaTdnnHeadConfig
 
-  enable_train_chunk: false
-  train_random_chunk_size: 40 # ~25 ms per frame. 40==1 second chunk size
-
+  # settings related to loss-function
+  use_cosine_linear: false  # set to true when using aam-softmax loss
