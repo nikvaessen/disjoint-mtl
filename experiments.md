@@ -52,9 +52,10 @@ hydra/launcher=slurm hydra.launcher.array_parallelism=4 hydra.launcher.timeout_m
 
 ```
 python run_speaker.py -m +experiments=speaker_aam_4cycle_nofreeze_ch3s_bs64 \
-network=speaker_wav2vec2_linear network.head_cfg.projection_layer_dim=64,128,256,512,1024 \
+network=speaker_wav2vec2_linear network.head_cfg.use_projection_layer=true \
+network.head_cfg.projection_layer_dim=64,128,256,512,1024 \
 project_name=speakers_heads \
-hydra/launcher=slurm hydra.launcher.array_parallelism=4 hydra.launcher.timeout_min=1440
+hydra/launcher=slurm hydra.launcher.array_parallelism=5 hydra.launcher.timeout_min=1440
 ```
 
 ```
