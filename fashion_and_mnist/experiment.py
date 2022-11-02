@@ -549,10 +549,6 @@ def main(
     wandb.finish()
 
 
-class HyperParameters:
-    pass
-
-
 if __name__ == "__main__":
     load_dotenv()
     parser = argparse.ArgumentParser()
