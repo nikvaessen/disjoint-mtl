@@ -518,6 +518,7 @@ def main(
     ca_grad_c: float = 0.5,
     use_gpu: bool = True,
     data_folder: pathlib.Path = pathlib.Path("data"),
+    experiment_name: str = None,
 ):
     num_steps = cycle_steps * num_cycles
 
@@ -532,8 +533,16 @@ def main(
         hparams={"max_steps": num_steps, "batch_size": batch_size},
     )
 
+    if experiment_name is None:
+        logger = WandbLogger(project="fashion+mnist")
+    else:
+        logger = WandbLogger(
+            project="fashion+mnist",
+            name=experiment_name,
+        )
+
     trainer = pytorch_lightning.Trainer(
-        logger=WandbLogger(project="fashion+mnist"),
+        logger=logger,
         callbacks=[
             pytorch_lightning.callbacks.LearningRateMonitor(),
             pytorch_lightning.callbacks.ModelCheckpoint(monitor="val_loss"),
@@ -618,4 +627,5 @@ def main_from_cfg(cfg: DictConfig):
         ca_grad_c=cfg.hparams.ca_grad_c,
         data_folder=pathlib.Path(cfg.log_folder),
         use_gpu=True,
+        experiment_name=cfg.experiment_name
     )
