@@ -1,0 +1,8 @@
+mode: mnist
+batch_size: 128
+cycle_steps: 1000
+num_cycles: 5
+max_lr: 1e-4
+base_lr_factor: 10
+weight_decay: 0
+ca_grad_c: 0

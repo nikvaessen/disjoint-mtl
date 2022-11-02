@@ -1,3 +1,6 @@
+import os
+import pathlib
+
 import math
 import argparse
 
@@ -14,6 +17,7 @@ import wandb
 
 from PIL.Image import Image
 from dotenv import load_dotenv
+from omegaconf import DictConfig, OmegaConf
 
 from torch import Generator
 from torch.optim import Adam
@@ -24,6 +28,8 @@ from torchvision.datasets import FashionMNIST, MNIST
 from pytorch_lightning.loggers import WandbLogger
 
 from scipy.optimize import minimize_scalar
+
+from src.util.system import get_git_revision_hash
 
 
 class CombinedDataset(Dataset):
@@ -138,6 +144,7 @@ def merge_sample(
 class MtlDataModule(pytorch_lightning.LightningDataModule):
     def __init__(
         self,
+        data_folder: pathlib.Path,
         batch_size: int,
         mode: str = "both",
     ):
@@ -150,8 +157,8 @@ class MtlDataModule(pytorch_lightning.LightningDataModule):
 
         self.batch_size = batch_size
 
-        self.mnist_path = "./mnist"
-        self.fashion_mnist_path = "./fashionmnist"
+        self.mnist_path = str(data_folder / "mnist")
+        self.fashion_mnist_path = str(data_folder / "fashionmnist")
 
     def prepare_data(self) -> None:
         MNIST(self.mnist_path, download=True)
@@ -510,10 +517,11 @@ def main(
     weight_decay: float = 1e-3,
     ca_grad_c: float = 0.5,
     use_gpu: bool = True,
+    data_folder: pathlib.Path = pathlib.Path("data"),
 ):
     num_steps = cycle_steps * num_cycles
 
-    dm = MtlDataModule(batch_size=batch_size, mode=mode)
+    dm = MtlDataModule(batch_size=batch_size, mode=mode, data_folder=data_folder)
     model = MTLModel(
         mode=mode,
         base_lr=max_lr / base_lr_factor,
@@ -525,6 +533,7 @@ def main(
     )
 
     trainer = pytorch_lightning.Trainer(
+        default_root_dir="data/logs/fashion+mnist",
         logger=WandbLogger(project="fashion+mnist"),
         callbacks=[
             pytorch_lightning.callbacks.LearningRateMonitor(),
@@ -541,25 +550,40 @@ def main(
     wandb.finish()
 
 
+class HyperParameters:
+    pass
+
+
 if __name__ == "__main__":
     load_dotenv()
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--mode", help="training mode", default="both")
-    parser.add_argument("--bs", help="batch_size", default=128)
+    parser.add_argument("--mode", help="training mode", default="both", type=str)
+    parser.add_argument("--batch_size", help="batch_size", default=128, type=int)
     parser.add_argument(
-        "--cycle_steps", help="number of steps in a single cycle", default=1000
+        "--cycle_steps",
+        help="number of steps in a single cycle",
+        default=1000,
+        type=int,
     )
-    parser.add_argument("--num_cycles", help="number of cycles", default=5)
-    parser.add_argument("--max_lr", help="maximum LR in cycle", default=1e-4)
+    parser.add_argument("--num_cycles", help="number of cycles", default=5, type=int)
+    parser.add_argument(
+        "--max_lr", help="maximum LR in cycle", default=1e-4, type=float
+    )
     parser.add_argument(
         "--base_lr_factor",
         help="minimum LR in cycle is max_lr/base_lr_factor",
         default=10,
+        type=int,
     )
-    parser.add_argument("--weight_decay", help="weight decay factor", default=0)
     parser.add_argument(
-        "--ca_grad_c", help="parameter for ca_grad if mode==both_cagrad", default=0
+        "--weight_decay", help="weight decay factor", default=0, type=float
+    )
+    parser.add_argument(
+        "--ca_grad_c",
+        help="parameter for ca_grad if mode==both_cagrad",
+        default=0,
+        type=float,
     )
     args = parser.parse_args()
 
@@ -573,4 +597,29 @@ if __name__ == "__main__":
         weight_decay=args.weight_decay,
         ca_grad_c=args.ca_grad_c,
         use_gpu=True,
+    )
+
+
+def main_from_cfg(cfg: DictConfig):
+    # print config
+    print(f"current git commit hash: {get_git_revision_hash()}")
+    print(f"PyTorch version is {torch.__version__}")
+    print(f"PyTorch Lightning version is {pytorch_lightning.__version__}")
+    if "SLURM_ARRAY_TASK_ID" in os.environ:
+        job_id = os.environ["SLURM_JOB_ID"]
+        task_id = os.environ["SLURM_ARRAY_TASK_ID"]
+        print(f"detected slurm array job: {job_id}_{task_id}")
+    print(OmegaConf.to_yaml(cfg))
+    print()
+
+    return main(
+        mode=cfg.hparams.mode,
+        batch_size=cfg.hparams.batch_size,
+        cycle_steps=cfg.hparams.cycle_steps,
+        num_cycles=cfg.hparams.num_cycles,
+        max_lr=cfg.hparams.max_lr,
+        base_lr_factor=cfg.hparams.base_lr_factor,
+        weight_decay=cfg.hparams.weight_decay,
+        ca_grad_c=cfg.hparams.ca_grad_c,
+        data_folder=pathlib.Path(cfg.log_folder)
     )

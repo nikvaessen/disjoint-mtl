@@ -1,0 +1,22 @@
+defaults:
+  - _self_
+  - hparams: stl_mnist
+
+# directory for slurm and hydra logs
+log_folder: ${oc.env:LOG_FOLDER}/fashion+mnist
+
+# experiment name
+# (:) indicates it needs to be resolved
+experiment_name: ${random_name:}
+
+# config variables for hydra
+hydra:
+  run:
+    # set root output directory
+    dir: ${log_folder}/fashion+mnist/run/${now:%Y-%m-%d_%H-%M-%S}/${experiment_name}
+  sweep:
+    # set root output directory
+    dir: ${log_folder}/fashion+mnist/sweep/${now:%Y-%m-%d_%H-%M-%S}
+    subdir: ${experiment_name}
+  job:
+    chdir: true
