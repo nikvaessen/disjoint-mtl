@@ -18,6 +18,7 @@ import wandb
 from PIL.Image import Image
 from dotenv import load_dotenv
 from omegaconf import DictConfig, OmegaConf
+from pytorch_lightning.plugins.environments import SLURMEnvironment
 
 from torch import Generator
 from torch.optim import Adam
@@ -550,7 +551,9 @@ def main(
         val_check_interval=100,
         check_val_every_n_epoch=None,
         max_steps=num_steps,
-        gpus=1 if use_gpu else None,
+        devices=1,
+        accelerator="gpu" if use_gpu else "cpu",
+        plugins=[SLURMEnvironment(auto_requeue=False)],
     )
     trainer.fit(model, dm)
     trainer.test(model, dm)
@@ -627,5 +630,5 @@ def main_from_cfg(cfg: DictConfig):
         ca_grad_c=cfg.hparams.ca_grad_c,
         data_folder=pathlib.Path(cfg.log_folder),
         use_gpu=True,
-        experiment_name=cfg.experiment_name
+        experiment_name=cfg.experiment_name,
     )
