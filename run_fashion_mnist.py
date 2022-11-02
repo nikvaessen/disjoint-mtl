@@ -55,7 +55,7 @@ if __name__ == "__main__":
         import random
         job_id = int(env_var["SLURM_ARRAY_TASK_ID"])
         random.seed(job_id)
-        sleep_sec = random.randint(100, 5000) / 5000
+        sleep_sec = random.randint(1, 10) / 5000
         print(f"detected slurm array job: sleeping for {sleep_sec} sec")
         time.sleep(sleep_sec)
 
