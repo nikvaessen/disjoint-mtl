@@ -1,5 +1,7 @@
 import math
-from typing import Optional, List, Tuple
+import argparse
+
+from typing import Optional, Dict
 
 import PIL
 import torch
@@ -21,6 +23,8 @@ from torch.utils.data.dataset import T_co
 from torchvision.datasets import FashionMNIST, MNIST
 from pytorch_lightning.loggers import WandbLogger
 
+from scipy.optimize import minimize_scalar
+
 
 class CombinedDataset(Dataset):
     def __init__(
@@ -39,7 +43,7 @@ class CombinedDataset(Dataset):
         self.mode = mode
         self.generator = generator
 
-        if self.mode not in ["mnist", "fashion", "both"]:
+        if self.mode not in ["mnist", "fashion", "both", "both_cagrad"]:
             raise ValueError(f"unknown {self.mode=}")
 
     def __len__(self):
@@ -142,7 +146,7 @@ class MtlDataModule(pytorch_lightning.LightningDataModule):
         self.train_dl = None
         self.val_dl = None
         self.test_dl = None
-        self.mode = mode
+        self.mode = mode if mode != "both_cagrad" else "both"
 
         self.batch_size = batch_size
 
@@ -194,6 +198,12 @@ class MTLModel(pytorch_lightning.LightningModule):
     def __init__(
         self,
         mode: str,
+        base_lr=1e-4,
+        max_lr=1e-3,
+        weight_decay=1e-3,
+        cycle_steps=400,
+        cagrad_c: float = None,
+        hparams: Dict = {},
     ):
         super().__init__()
 
@@ -206,6 +216,11 @@ class MTLModel(pytorch_lightning.LightningModule):
         self.loss_fn = torch.nn.CrossEntropyLoss()
 
         self.mode = mode
+        self.base_lr = base_lr
+        self.max_lr = max_lr
+        self.weight_decay = weight_decay
+        self.cycle_steps = cycle_steps
+        self.cagrad_c = cagrad_c
 
         self.train_acc_mnist = torchmetrics.Accuracy()
         self.train_acc_fashion = torchmetrics.Accuracy()
@@ -214,44 +229,56 @@ class MTLModel(pytorch_lightning.LightningModule):
         self.test_acc_mnist = torchmetrics.Accuracy()
         self.test_acc_fashion = torchmetrics.Accuracy()
 
-        self.save_hyperparameters({"mode": self.mode})
+        if self.mode == "both_cagrad":
+            hparams["cagrad_c"] = cagrad_c
+            self.automatic_optimization = False
+
+        self.save_hyperparameters(
+            {
+                "mode": self.mode,
+                "base_lr": self.base_lr,
+                "max_lr": max_lr,
+                "weight_decay": weight_decay,
+                "cycle_steps": cycle_steps,
+                **hparams,
+            }
+        )
 
     def grad2vec(self, apply_zero_grad: bool = True):
         with torch.no_grad():
             # extract all gradients from all parameters and put them into a single vector
-            reconstruction_list = []
+            reconstruction_dict = {}
             stack = []
+            start_idx = 0
 
-            for idx, (name, param) in enumerate(self.named_parameters()):
-                reconstruction_list.append((idx, name, param.shape, param.requires_grad))
+            for name, param in self.shared_params():
+                if param.requires_grad and param.grad is not None:
+                    reconstruction_dict[name] = start_idx
+                    flat_grad = param.grad.flatten()
+                    stack.append(flat_grad)
+                    start_idx += flat_grad.shape[0]
 
-                if param.requires_grad:
-                    stack.append(param.flatten())
-
-            vec = torch.concat(stack)
+            grad_vec = torch.concat(stack)
 
             if apply_zero_grad:
                 self.zero_grad()
 
-            return vec, reconstruction_list
+            return grad_vec, reconstruction_dict
 
-    def vec2grad(self, vec: torch.Tensor, reconstruction_list: List[Tuple]):
+    def vec2grad(self, vec: torch.Tensor, reconstruction_dict: Dict[str, int]):
         with torch.no_grad():
             # put the single grad vector back into the grad of all parameters
-            current_dim = 0
+            for name, param in self.shared_params():
+                if name in reconstruction_dict:
+                    num_params = math.prod(param.shape)
+                    begin_idx = reconstruction_dict[name]
+                    end_idx = begin_idx + num_params
 
-            for idx, (name, param) in enumerate(self.named_parameters()):
-                meta_idx, meta_name, meta_shape, meta_requires_grad = reconstruction_list[idx]
-                assert meta_idx == idx
-                assert meta_name == name
-                assert meta_shape == param.shape
+                    flattened_vec = vec[begin_idx:end_idx]
+                    param.grad = flattened_vec.unflatten(-1, param.shape)
 
-                num_params = math.prod(meta_shape)
-
-                flattened_vec = vec[current_dim:current_dim+num_params]
-                param.grad = flattened_vec.unflatten(0, meta_shape)
-
-                current_dim += num_params
+    def shared_params(self):
+        return self.resnet.named_parameters()
 
     def training_step(self, batch, batch_idx):
         if self.mode == "both":
@@ -265,30 +292,74 @@ class MTLModel(pytorch_lightning.LightningModule):
             loss_mnist = self.loss_fn(pred_mnist, gt_mnist)
             loss_fashion = self.loss_fn(pred_fashion, gt_fashion)
 
-            loss = (loss_fashion + loss_mnist)/2
-
-            loss_mnist.backward()
-            print()
-            print(loss_mnist)
-            print(loss_fashion)
-            with torch.no_grad():
-                print(self.fc_mnist.weight.grad, torch.sum(self.fc_mnist.weight.grad))
-                vec, info = self.grad2vec()
-                print("vecsum", torch.sum(vec))
-                print(self.fc_mnist.weight.grad, torch.sum(self.fc_mnist.weight.grad))
-                self.vec2grad(vec, info)
-                print(self.fc_mnist.weight.grad, torch.sum(self.fc_mnist.weight.grad))
-
-                vec, info = self.grad2vec()
-                print("vecsum", torch.sum(vec))
-
-                self.vec2grad(vec, info)
-                print(self.fc_mnist.weight.grad, torch.sum(self.fc_mnist.weight.grad))
-
-
-            exit()
+            loss = (loss_fashion + loss_mnist) / 2
 
             self.log("train_loss", loss, on_epoch=False)
+            self.log("loss_fashion", loss_fashion, on_epoch=False)
+            self.log("loss_mnist", loss_mnist, on_epoch=False)
+            self.log(
+                "train_mnist_acc",
+                self.train_acc_mnist(pred_mnist, gt_mnist),
+                on_epoch=True,
+            )
+            self.log(
+                "train_fashion_acc",
+                self.train_acc_fashion(pred_fashion, gt_fashion),
+                on_epoch=True,
+            )
+        elif self.mode == "both_cagrad":
+            image, (gt_mnist, gt_fashion) = batch
+
+            opt = self.optimizers()
+            sch = self.lr_schedulers()
+            opt.zero_grad()
+
+            features = self.resnet(image)
+
+            pred_mnist = self.fc_mnist(features)
+            loss_mnist = self.loss_fn(pred_mnist, gt_mnist)
+            self.manual_backward(loss_mnist, retain_graph=True)
+            g1, g1_info = self.grad2vec()
+
+            pred_fashion = self.fc_fashion(features)
+            loss_fashion = self.loss_fn(pred_fashion, gt_fashion)
+            self.manual_backward(loss_fashion)
+            g2, g2_info = self.grad2vec()
+
+            with torch.no_grad():
+                g0 = (g1 + g2) / 2
+                g0_norm = torch.linalg.norm(g0)
+                phi = self.cagrad_c**2 * g0_norm**2
+                phi_sqrt = torch.sqrt(phi)
+
+                def min_fn(w):
+                    w1 = w
+                    w2 = 1 - w
+
+                    gw_temp = (w1 * g1) + (w2 * g2) / 2
+                    gw_norm_temp = torch.linalg.norm(gw_temp)
+
+                    gwg0 = torch.dot(gw_temp, g0)
+
+                    objective = gwg0 + (phi_sqrt * gw_norm_temp)
+
+                    return objective.cpu().detach().item()
+
+                res = minimize_scalar(min_fn, bounds=(0, 1), method="bounded")
+                opt_w1 = res.x
+                opt_w2 = 1 - opt_w1
+
+                gw = (opt_w1 * g1) + (opt_w2 * g2)
+                gw_norm = torch.linalg.norm(gw)
+                coef = phi_sqrt / gw_norm
+                g = g0 + (coef * gw)
+
+                self.vec2grad(g, g1_info)
+                loss = (loss_fashion + loss_mnist) / 2  # just for logging
+                opt.step()
+                sch.step()
+
+            self.log("train_loss", loss, on_epoch=False, prog_bar=True)
             self.log("loss_fashion", loss_fashion, on_epoch=False)
             self.log("loss_mnist", loss_mnist, on_epoch=False)
             self.log(
@@ -333,7 +404,7 @@ class MTLModel(pytorch_lightning.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        if self.mode == "both":
+        if self.mode == "both" or self.mode == "both_cagrad":
             image, (gt_mnist, gt_fashion) = batch
 
             features = self.resnet(image)
@@ -387,7 +458,7 @@ class MTLModel(pytorch_lightning.LightningModule):
             raise ValueError("")
 
     def test_step(self, batch, batch_idx):
-        if self.mode == "both":
+        if self.mode == "both" or self.mode == "both_cagrad":
             image, (gt_mnist, gt_fashion) = batch
         elif self.mode == "mnist":
             image, gt_mnist = batch
@@ -397,7 +468,7 @@ class MTLModel(pytorch_lightning.LightningModule):
 
         features = self.resnet(image)
 
-        if self.mode == "both" or self.mode == "mnist":
+        if self.mode == "both" or self.mode == "both_cagrad" or self.mode == "mnist":
             pred_mnist = self.fc_mnist(features)
 
             self.log(
@@ -405,7 +476,7 @@ class MTLModel(pytorch_lightning.LightningModule):
                 self.test_acc_mnist(pred_mnist, gt_mnist),
                 prog_bar=True,
             )
-        if self.mode == "both" or self.mode == "fashion":
+        if self.mode == "both" or self.mode == "both_cagrad" or self.mode == "fashion":
             pred_fashion = self.fc_fashion(features)
             self.log(
                 "test_fashion_acc",
@@ -414,13 +485,13 @@ class MTLModel(pytorch_lightning.LightningModule):
             )
 
     def configure_optimizers(self):
-        opt = Adam(self.parameters(), lr=1e-3)
+        opt = Adam(self.parameters(), lr=self.base_lr, weight_decay=self.weight_decay)
         sched = CyclicLR(
             opt,
-            base_lr=1e-5,
-            max_lr=1e-3,
-            step_size_up=200,
-            step_size_down=200,
+            base_lr=self.base_lr,
+            max_lr=self.max_lr,
+            step_size_up=self.cycle_steps // 2,
+            step_size_down=self.cycle_steps // 2,
             cycle_momentum=False,
         )
         return {
@@ -429,20 +500,40 @@ class MTLModel(pytorch_lightning.LightningModule):
         }
 
 
-def main(mode="mnist"):
-    dm = MtlDataModule(batch_size=128, mode=mode)
-    model = MTLModel(mode=mode)
+def main(
+    mode: str = "both",
+    batch_size: int = 128,
+    cycle_steps: int = 800,
+    num_cycles: int = 4,
+    max_lr: float = 1e-4,
+    base_lr_factor: int = 10,
+    weight_decay: float = 1e-3,
+    ca_grad_c: float = 0.5,
+    use_gpu: bool = True,
+):
+    num_steps = cycle_steps * num_cycles
+
+    dm = MtlDataModule(batch_size=batch_size, mode=mode)
+    model = MTLModel(
+        mode=mode,
+        base_lr=max_lr / base_lr_factor,
+        max_lr=max_lr,
+        weight_decay=weight_decay,
+        cycle_steps=cycle_steps,
+        cagrad_c=ca_grad_c,
+        hparams={"max_steps": num_steps, "batch_size": batch_size},
+    )
 
     trainer = pytorch_lightning.Trainer(
-        # logger=WandbLogger(project="fashion+mnist"),
+        logger=WandbLogger(project="fashion+mnist"),
         callbacks=[
             pytorch_lightning.callbacks.LearningRateMonitor(),
             pytorch_lightning.callbacks.ModelCheckpoint(monitor="val_loss"),
         ],
         val_check_interval=100,
         check_val_every_n_epoch=None,
-        max_steps=2400,
-        num_sanity_val_steps=0,
+        max_steps=num_steps,
+        gpus=1 if use_gpu else None,
     )
     trainer.fit(model, dm)
     trainer.test(model, dm)
@@ -452,6 +543,34 @@ def main(mode="mnist"):
 
 if __name__ == "__main__":
     load_dotenv()
-    main(mode="both")
-    # main(mode="mnist")
-    # main(mode="fashion")
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--mode", help="training mode", default="both")
+    parser.add_argument("--bs", help="batch_size", default=128)
+    parser.add_argument(
+        "--cycle_steps", help="number of steps in a single cycle", default=1000
+    )
+    parser.add_argument("--num_cycles", help="number of cycles", default=5)
+    parser.add_argument("--max_lr", help="maximum LR in cycle", default=1e-4)
+    parser.add_argument(
+        "--base_lr_factor",
+        help="minimum LR in cycle is max_lr/base_lr_factor",
+        default=10,
+    )
+    parser.add_argument("--weight_decay", help="weight decay factor", default=0)
+    parser.add_argument(
+        "--ca_grad_c", help="parameter for ca_grad if mode==both_cagrad", default=0
+    )
+    args = parser.parse_args()
+
+    main(
+        mode=args.mode,
+        batch_size=args.batch_size,
+        cycle_steps=args.cycle_steps,
+        num_cycles=args.num_cycles,
+        max_lr=args.max_lr,
+        base_lr_factor=args.base_lr_factor,
+        weight_decay=args.weight_decay,
+        ca_grad_c=args.ca_grad_c,
+        use_gpu=True,
+    )

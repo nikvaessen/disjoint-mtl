@@ -16,6 +16,7 @@ use_gradient_checkpointing: true
 # head on top of wav2vec2 for speaker recognition
 speaker_head_cfg:
   _target_: src.networks.heads.LinearProjectionHeadConfig
+  use_projection_layer: false
   projection_layer_dim: 128
   drop_prob: 0.05
   use_cosine_linear: false
