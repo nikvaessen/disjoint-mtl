@@ -533,7 +533,6 @@ def main(
     )
 
     trainer = pytorch_lightning.Trainer(
-        default_root_dir="data/logs/fashion+mnist",
         logger=WandbLogger(project="fashion+mnist"),
         callbacks=[
             pytorch_lightning.callbacks.LearningRateMonitor(),
@@ -621,5 +620,6 @@ def main_from_cfg(cfg: DictConfig):
         base_lr_factor=cfg.hparams.base_lr_factor,
         weight_decay=cfg.hparams.weight_decay,
         ca_grad_c=cfg.hparams.ca_grad_c,
-        data_folder=pathlib.Path(cfg.log_folder)
+        data_folder=pathlib.Path(cfg.log_folder),
+        use_gpu=True,
     )
