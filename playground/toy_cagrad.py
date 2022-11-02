@@ -1,4 +1,5 @@
-from typing import Optional
+import math
+from typing import Optional, List, Tuple
 
 import PIL
 import torch
@@ -215,6 +216,43 @@ class MTLModel(pytorch_lightning.LightningModule):
 
         self.save_hyperparameters({"mode": self.mode})
 
+    def grad2vec(self, apply_zero_grad: bool = True):
+        with torch.no_grad():
+            # extract all gradients from all parameters and put them into a single vector
+            reconstruction_list = []
+            stack = []
+
+            for idx, (name, param) in enumerate(self.named_parameters()):
+                reconstruction_list.append((idx, name, param.shape, param.requires_grad))
+
+                if param.requires_grad:
+                    stack.append(param.flatten())
+
+            vec = torch.concat(stack)
+
+            if apply_zero_grad:
+                self.zero_grad()
+
+            return vec, reconstruction_list
+
+    def vec2grad(self, vec: torch.Tensor, reconstruction_list: List[Tuple]):
+        with torch.no_grad():
+            # put the single grad vector back into the grad of all parameters
+            current_dim = 0
+
+            for idx, (name, param) in enumerate(self.named_parameters()):
+                meta_idx, meta_name, meta_shape, meta_requires_grad = reconstruction_list[idx]
+                assert meta_idx == idx
+                assert meta_name == name
+                assert meta_shape == param.shape
+
+                num_params = math.prod(meta_shape)
+
+                flattened_vec = vec[current_dim:current_dim+num_params]
+                param.grad = flattened_vec.unflatten(0, meta_shape)
+
+                current_dim += num_params
+
     def training_step(self, batch, batch_idx):
         if self.mode == "both":
             image, (gt_mnist, gt_fashion) = batch
@@ -227,7 +265,29 @@ class MTLModel(pytorch_lightning.LightningModule):
             loss_mnist = self.loss_fn(pred_mnist, gt_mnist)
             loss_fashion = self.loss_fn(pred_fashion, gt_fashion)
 
-            loss = loss_fashion + loss_mnist
+            loss = (loss_fashion + loss_mnist)/2
+
+            loss_mnist.backward()
+            print()
+            print(loss_mnist)
+            print(loss_fashion)
+            with torch.no_grad():
+                print(self.fc_mnist.weight.grad, torch.sum(self.fc_mnist.weight.grad))
+                vec, info = self.grad2vec()
+                print("vecsum", torch.sum(vec))
+                print(self.fc_mnist.weight.grad, torch.sum(self.fc_mnist.weight.grad))
+                self.vec2grad(vec, info)
+                print(self.fc_mnist.weight.grad, torch.sum(self.fc_mnist.weight.grad))
+
+                vec, info = self.grad2vec()
+                print("vecsum", torch.sum(vec))
+
+                self.vec2grad(vec, info)
+                print(self.fc_mnist.weight.grad, torch.sum(self.fc_mnist.weight.grad))
+
+
+            exit()
+
             self.log("train_loss", loss, on_epoch=False)
             self.log("loss_fashion", loss_fashion, on_epoch=False)
             self.log("loss_mnist", loss_mnist, on_epoch=False)
@@ -374,7 +434,7 @@ def main(mode="mnist"):
     model = MTLModel(mode=mode)
 
     trainer = pytorch_lightning.Trainer(
-        logger=WandbLogger(project="fashion+mnist"),
+        # logger=WandbLogger(project="fashion+mnist"),
         callbacks=[
             pytorch_lightning.callbacks.LearningRateMonitor(),
             pytorch_lightning.callbacks.ModelCheckpoint(monitor="val_loss"),
@@ -393,5 +453,5 @@ def main(mode="mnist"):
 if __name__ == "__main__":
     load_dotenv()
     main(mode="both")
-    main(mode="mnist")
-    main(mode="fashion")
+    # main(mode="mnist")
+    # main(mode="fashion")
