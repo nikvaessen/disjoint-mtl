@@ -304,18 +304,26 @@ class MTLModel(pytorch_lightning.LightningModule):
             g2, g2_info = self.grad2vec()
 
             with torch.no_grad():
-                angle = torch.dot(g1, g2)
-
-                self.angles.append(angle.item())
-                if len(self.angles) >= 100:
-                    num_pos = torch.sum((torch.tensor(self.angles) > 0))
-                    self.log("pos_angles_100", num_pos, on_step=True, on_epoch=False)
-                    self.angles.clear()
 
                 g0 = (g1 + g2) / 2
                 g0_norm = torch.linalg.norm(g0)
                 phi = self.cagrad_c**2 * g0_norm**2
                 phi_sqrt = torch.sqrt(phi)
+
+                angle_g1_g2 = torch.dot(g1, g2)
+                angle_g0_g1 = torch.dot(g0, g1)
+                angle_g0_g2 = torch.dot(g0, g2)
+
+                self.angles.append((angle_g1_g2, angle_g0_g1, angle_g0_g2))
+                if len(self.angles) >= 100:
+                    for i, name in enumerate(["g1g2", "g0g1", "g0g2"]):
+                        num_neg = torch.sum(
+                            (torch.tensor([a[i] for a in self.angles]) < 0)
+                        )
+                        self.log(
+                            f"{name}_neg_100", num_neg, on_step=True, on_epoch=False
+                        )
+                    self.angles.clear()
 
                 def min_fn(w):
                     w1 = w
