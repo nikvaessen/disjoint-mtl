@@ -17,6 +17,7 @@ from src.util.hydra_resolvers import (
     division_resolver,
     integer_division_resolver,
     random_uuid,
+    random_experiment_id,
 )
 
 ################################################################################
@@ -25,13 +26,16 @@ from src.util.hydra_resolvers import (
 OmegaConf.register_new_resolver("divide", division_resolver)
 OmegaConf.register_new_resolver("idivide", integer_division_resolver)
 OmegaConf.register_new_resolver("random_uuid", random_uuid)
+OmegaConf.register_new_resolver("random_name", random_experiment_id)
 
 
 ################################################################################
 # wrap around main hydra script
 
 
-@hydra.main(config_path="fashion_and_mnist/config", config_name="main", version_base="1.2")
+@hydra.main(
+    config_path="fashion_and_mnist/config", config_name="main", version_base="1.2"
+)
 def run(cfg: DictConfig):
     # we import here such that tab-completion in bash
     # does not need to import everything (which slows it down
@@ -51,6 +55,7 @@ if __name__ == "__main__":
 
     if "SLURM_ARRAY_TASK_ID" in env_var:
         import random
+
         job_id = int(env_var["SLURM_ARRAY_TASK_ID"])
         random.seed(job_id)
         sleep_sec = random.randint(1, 10) / 5000
