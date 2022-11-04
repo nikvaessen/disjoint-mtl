@@ -13,6 +13,10 @@ initial_checkpoint: null
 fit_model: true
 initial_prune_factor: 0.3
 
+# experiment name
+# (:) indicates it needs to be resolved
+experiment_name: ${random_name:}
+
 # config variables for hydra
 hydra:
   run:
@@ -21,6 +25,6 @@ hydra:
   sweep:
     # set root output directory
     dir: ${log_folder}/fashion+mnist/sweep/${now:%Y-%m-%d_%H-%M-%S}
-    subdir: ${hydra.job.id}
+    subdir: ${experiment_name}
   job:
     chdir: true

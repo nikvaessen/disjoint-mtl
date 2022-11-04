@@ -695,7 +695,7 @@ def main_from_cfg(cfg: DictConfig):
         ca_grad_c=cfg.hparams.ca_grad_c,
         data_folder=pathlib.Path(cfg.log_folder),
         use_gpu=True,
-        experiment_name=random_experiment_id(),
+        experiment_name=cfg.experiment_name,
         tag=cfg.tag,
         use_wandb=cfg.use_wandb,
         fit_model=cfg.fit_model,
