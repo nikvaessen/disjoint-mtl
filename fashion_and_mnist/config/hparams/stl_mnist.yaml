@@ -6,3 +6,4 @@ max_lr: 1e-4
 base_lr_factor: 10
 weight_decay: 1e-6
 ca_grad_c: 0.5
+model: resnet18

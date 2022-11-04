@@ -20,7 +20,8 @@ from dotenv import load_dotenv
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.plugins.environments import SLURMEnvironment
 
-from torch import Generator
+from torch import Generator, nn
+from torch.nn.utils import prune
 from torch.optim import Adam
 from torch.optim.lr_scheduler import CyclicLR
 from torch.utils.data import DataLoader, Dataset, random_split
@@ -30,6 +31,7 @@ from pytorch_lightning.loggers import WandbLogger
 
 from scipy.optimize import minimize_scalar
 
+from src.util.hydra_resolvers import random_experiment_id
 from src.util.system import get_git_revision_hash
 
 
@@ -178,15 +180,23 @@ class MTLModel(pytorch_lightning.LightningModule):
         weight_decay=1e-3,
         cycle_steps=400,
         cagrad_c: float = None,
+        model: str = "resnet18",
         hparams: Dict = {},
     ):
         super().__init__()
 
-        self.resnet = torchvision.models.resnet18()
-        self.resnet.fc = torch.nn.Identity()
+        if model == "resnet18":
+            self.resnet = torchvision.models.resnet18()
+            self.fc_mnist = torch.nn.Linear(in_features=512, out_features=10)
+            self.fc_fashion = torch.nn.Linear(in_features=512, out_features=10)
+        elif model == "resnet152":
+            self.resnet = torchvision.models.resnet152()
+            self.fc_mnist = torch.nn.Linear(in_features=2048, out_features=10)
+            self.fc_fashion = torch.nn.Linear(in_features=2048, out_features=10)
+        else:
+            raise ValueError(f"unknown {model=}")
 
-        self.fc_mnist = torch.nn.Linear(in_features=512, out_features=10)
-        self.fc_fashion = torch.nn.Linear(in_features=512, out_features=10)
+        self.resnet.fc = torch.nn.Identity()
 
         self.loss_fn = torch.nn.CrossEntropyLoss()
 
@@ -257,6 +267,39 @@ class MTLModel(pytorch_lightning.LightningModule):
     def shared_params(self):
         return self.resnet.named_parameters()
 
+    def grad_per_layer(self):
+        with torch.no_grad():
+            layer_dict = {}
+
+            for name, param in self.shared_params():
+                if param.requires_grad and param.grad is not None:
+                    flat_grad = param.grad.flatten().clone()
+                    layer_dict[name] = flat_grad
+
+            return layer_dict
+
+    def log_grad_per_layer(self, g1_layer_dict, g2_layer_dict):
+        assert [k for k in g1_layer_dict.keys()] == [k for k in g2_layer_dict.keys()]
+
+        for k in g1_layer_dict.keys():
+            g1 = g1_layer_dict[k]
+            g2 = g2_layer_dict[k]
+            g0 = (g1 + g2) / 2
+
+            g0g1 = torch.dot(g0, g1)
+            g0g2 = torch.dot(g0, g2)
+            g1g2 = torch.dot(g1, g2)
+
+            dir_path = pathlib.Path.cwd() / "layer_grad"
+            dir_path.mkdir(exist_ok=True, parents=True)
+
+            with (dir_path / f"{k}.txt").open("a") as f:
+                f.write(
+                    f"{g0g1.cpu().detach().item():.5f}\t"
+                    f"{g0g2.cpu().detach().item():.5f}\t"
+                    f"{g1g2.cpu().detach().item():.5f}\n"
+                )
+
     def training_step(self, batch, batch_idx):
         if self.mode == "both":
             image, (gt_mnist, gt_fashion) = batch
@@ -296,15 +339,16 @@ class MTLModel(pytorch_lightning.LightningModule):
             pred_mnist = self.fc_mnist(features)
             loss_mnist = self.loss_fn(pred_mnist, gt_mnist)
             self.manual_backward(loss_mnist, retain_graph=True)
+            g1_layer = self.grad_per_layer()
             g1, g1_info = self.grad2vec()
 
             pred_fashion = self.fc_fashion(features)
             loss_fashion = self.loss_fn(pred_fashion, gt_fashion)
             self.manual_backward(loss_fashion)
+            g2_layer = self.grad_per_layer()
             g2, g2_info = self.grad2vec()
 
             with torch.no_grad():
-
                 g0 = (g1 + g2) / 2
                 g0_norm = torch.linalg.norm(g0)
                 phi = self.cagrad_c**2 * g0_norm**2
@@ -324,6 +368,8 @@ class MTLModel(pytorch_lightning.LightningModule):
                             f"{name}_neg_100", num_neg, on_step=True, on_epoch=False
                         )
                     self.angles.clear()
+
+                self.log_grad_per_layer(g1_layer, g2_layer)
 
                 def min_fn(w):
                     w1 = w
@@ -494,8 +540,15 @@ class MTLModel(pytorch_lightning.LightningModule):
         }
 
 
+def prune_model(model, factor: float):
+    for name, module in model.named_modules():
+        if isinstance(module, nn.Linear) or isinstance(module, nn.Conv2d):
+            prune.l1_unstructured(module, "weight", factor)
+
+
 def main(
     mode: str = "both",
+    model: str = "resnet18",
     batch_size: int = 128,
     cycle_steps: int = 800,
     num_cycles: int = 4,
@@ -507,12 +560,17 @@ def main(
     data_folder: pathlib.Path = pathlib.Path("data"),
     experiment_name: str = None,
     tag: str = None,
+    use_wandb: bool = False,
+    fit_model: bool = True,
+    initial_checkpoint: str = None,
+    initial_prune_factor: float = None,
 ):
     num_steps = cycle_steps * num_cycles
 
     dm = MtlDataModule(batch_size=batch_size, mode=mode, data_folder=data_folder)
     model = MTLModel(
         mode=mode,
+        model=model,
         base_lr=max_lr / base_lr_factor,
         max_lr=max_lr,
         weight_decay=weight_decay,
@@ -521,10 +579,31 @@ def main(
         hparams={"max_steps": num_steps, "batch_size": batch_size},
     )
 
-    if experiment_name is None:
-        logger = WandbLogger(project="fashion+mnist")
+    if initial_checkpoint is not None:
+        loaded = torch.load(initial_checkpoint)
+        if isinstance(loaded, dict):
+            model.load_state_dict(torch.load(initial_checkpoint)["state_dict"])
+        elif isinstance(loaded, torch.nn.Module):
+            model.load_state_dict(torch.load(initial_checkpoint).state_dict())
+        else:
+            raise ValueError(f"cannot parse {loaded=}")
+
+    if initial_prune_factor is not None:
+        prune_model(model, initial_prune_factor)
+
+    if use_wandb:
+        if experiment_name is None:
+            logger = WandbLogger(project="fashion+mnist")
+        else:
+            if tag is None:
+                tags = None
+            else:
+                tags = [tag]
+            logger = WandbLogger(
+                project="fashion+mnist", name=experiment_name, tags=tags
+            )
     else:
-        logger = WandbLogger(project="fashion+mnist", name=experiment_name, tags=[tag])
+        logger = True
 
     trainer = pytorch_lightning.Trainer(
         logger=logger,
@@ -539,7 +618,8 @@ def main(
         accelerator="gpu" if use_gpu else "cpu",
         plugins=[SLURMEnvironment(auto_requeue=False)],
     )
-    trainer.fit(model, dm)
+    if fit_model:
+        trainer.fit(model, dm)
     trainer.test(model, dm)
 
     wandb.finish()
@@ -605,6 +685,7 @@ def main_from_cfg(cfg: DictConfig):
 
     return main(
         mode=cfg.hparams.mode,
+        model=cfg.hparams.model,
         batch_size=cfg.hparams.batch_size,
         cycle_steps=cfg.hparams.cycle_steps,
         num_cycles=cfg.hparams.num_cycles,
@@ -614,6 +695,10 @@ def main_from_cfg(cfg: DictConfig):
         ca_grad_c=cfg.hparams.ca_grad_c,
         data_folder=pathlib.Path(cfg.log_folder),
         use_gpu=True,
-        experiment_name=cfg.experiment_name,
+        experiment_name=random_experiment_id(),
         tag=cfg.tag,
+        use_wandb=cfg.use_wandb,
+        fit_model=cfg.fit_model,
+        initial_checkpoint=cfg.initial_checkpoint,
+        initial_prune_factor=cfg.initial_prune_factor,
     )

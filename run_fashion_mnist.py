@@ -17,7 +17,6 @@ from src.util.hydra_resolvers import (
     division_resolver,
     integer_division_resolver,
     random_uuid,
-    random_experiment_id,
 )
 
 ################################################################################
@@ -26,7 +25,6 @@ from src.util.hydra_resolvers import (
 OmegaConf.register_new_resolver("divide", division_resolver)
 OmegaConf.register_new_resolver("idivide", integer_division_resolver)
 OmegaConf.register_new_resolver("random_uuid", random_uuid)
-OmegaConf.register_new_resolver("random_name", random_experiment_id)
 
 
 ################################################################################

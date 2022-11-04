@@ -5,22 +5,22 @@ defaults:
 # directory for slurm and hydra logs
 log_folder: ${oc.env:LOG_FOLDER}/fashion+mnist
 
-# experiment name
-# (:) indicates it needs to be resolved
-experiment_name: ${random_name:}
-
 # tag
 tag: null
 
+use_wandb: false
+initial_checkpoint: null
+fit_model: true
+initial_prune_factor: 0.3
 
 # config variables for hydra
 hydra:
   run:
     # set root output directory
-    dir: ${log_folder}/fashion+mnist/run/${now:%Y-%m-%d_%H-%M-%S}/${experiment_name}
+    dir: ${log_folder}/fashion+mnist/run/${now:%Y-%m-%d_%H-%M-%S}
   sweep:
     # set root output directory
     dir: ${log_folder}/fashion+mnist/sweep/${now:%Y-%m-%d_%H-%M-%S}
-    subdir: ${experiment_name}
+    subdir: ${hydra.job.id}
   job:
     chdir: true
