@@ -204,6 +204,8 @@ class MTLModel(pytorch_lightning.LightningModule):
         self.test_acc_mnist = torchmetrics.Accuracy()
         self.test_acc_fashion = torchmetrics.Accuracy()
 
+        self.angles = []
+
         if self.mode == "both_cagrad":
             hparams["cagrad_c"] = cagrad_c
             self.automatic_optimization = False
@@ -302,6 +304,14 @@ class MTLModel(pytorch_lightning.LightningModule):
             g2, g2_info = self.grad2vec()
 
             with torch.no_grad():
+                angle = torch.dot(g1, g2)
+
+                self.angles.append(angle.item())
+                if len(self.angles) >= 100:
+                    num_pos = torch.sum((torch.tensor(self.angles) > 0))
+                    self.log("pos_angles_100", num_pos, on_step=True, on_epoch=False)
+                    self.angles.clear()
+
                 g0 = (g1 + g2) / 2
                 g0_norm = torch.linalg.norm(g0)
                 phi = self.cagrad_c**2 * g0_norm**2
