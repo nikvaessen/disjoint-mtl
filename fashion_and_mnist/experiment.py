@@ -40,6 +40,7 @@ class CombinedDataset(Dataset):
         fashion_mnist: FashionMNIST,
         mode: str,
         train: bool = True,
+        apply_aug: bool = False,
         generator: Generator = torch.Generator().manual_seed(42),
     ):
         assert len(mnist) == len(fashion_mnist)
@@ -48,98 +49,60 @@ class CombinedDataset(Dataset):
         self.fashion_mnist = fashion_mnist
         self.train = train
         self.mode = mode
+        self.apply_aug = apply_aug
         self.generator = generator
 
-        if self.mode not in ["mnist", "fashion", "both", "both_cagrad"]:
+        self.transform = torchvision.transforms.Compose(
+            [
+                torchvision.transforms.ToTensor(),
+            ]
+        )
+        self.transform_aug = torchvision.transforms.Compose(
+            [
+                torchvision.transforms.RandomHorizontalFlip(),
+                torchvision.transforms.RandomVerticalFlip(),
+                torchvision.transforms.RandomRotation(15),
+                torchvision.transforms.ToTensor(),
+            ]
+        )
+
+        if self.mode not in ["mnist", "fashion", "both"]:
             raise ValueError(f"unknown {self.mode=}")
 
     def __len__(self):
         return len(self.mnist)
 
     def __getitem__(self, index) -> T_co:
-        if self.train:
+        if self.train and self.mode == "both":
             fashion_idx = torch.randint(
                 low=0, high=len(self.fashion_mnist), size=(), generator=self.generator
             ).item()
         else:
             fashion_idx = index
 
+        transform = self.transform_aug if self.apply_aug else self.transform
+
         mnist_sample, mnist_gt = self.mnist[index]
         fashion_sample, fashion_gt = self.fashion_mnist[fashion_idx]
 
-        mnist_sample_tensor = torch.tensor(np.array(mnist_sample), dtype=torch.float32)
-        fashion_sample_tensor = torch.tensor(
-            np.array(fashion_sample), dtype=torch.float32
-        )
+        mnist_sample_tensor = transform(mnist_sample)
+        fashion_sample_tensor = transform(fashion_sample)
         blank_tensor = torch.zeros_like(mnist_sample_tensor, dtype=torch.float32)
 
         if self.mode == "both":
-            return torch.stack(
-                [mnist_sample_tensor, fashion_sample_tensor, blank_tensor]
+            return torch.cat(
+                [mnist_sample_tensor, fashion_sample_tensor, blank_tensor], dim=0
             ), (mnist_gt, fashion_gt)
         elif self.mode == "mnist":
             return (
-                torch.stack([mnist_sample_tensor, blank_tensor, blank_tensor]),
+                torch.cat([mnist_sample_tensor, blank_tensor, blank_tensor], dim=0),
                 mnist_gt,
             )
-
         elif self.mode == "fashion":
             return (
-                torch.stack([fashion_sample_tensor, blank_tensor, blank_tensor]),
+                torch.cat([fashion_sample_tensor, blank_tensor, blank_tensor], dim=0),
                 fashion_gt,
             )
-
-
-def merge_sample(
-    sample: Image, other_sample: Image, generator: Generator = None
-) -> Image:
-    sample_np = np.array(sample)
-    other_sample_np = np.array(other_sample)
-
-    width, height = sample_np.shape
-    padding = 2
-    padding_range = 2 * padding
-
-    merged_np = np.zeros(((width + padding_range) * 2, (height + padding_range) * 2))
-
-    upper_x = 0
-    upper_y = 0
-
-    center_x = width + padding_range
-    center_y = height + padding_range
-
-    # place sample
-    start_x = torch.randint(
-        low=upper_x, high=upper_x + padding_range, size=(), generator=generator
-    ).item()
-    end_x = start_x + width
-    start_y = torch.randint(
-        low=upper_y, high=upper_y + padding_range, size=(), generator=generator
-    ).item()
-    end_y = start_y + height
-
-    merged_np[start_x:end_x, start_y:end_y] = sample_np
-
-    # place other sample
-    start_x = torch.randint(
-        low=center_x,
-        high=center_x + padding_range,
-        size=(),
-        generator=generator,
-    ).item()
-    end_x = start_x + width
-    start_y = torch.randint(
-        low=center_y,
-        high=center_y + padding_range,
-        size=(),
-        generator=generator,
-    ).item()
-    end_y = start_y + height
-
-    merged_np[start_x:end_x, start_y:end_y] = other_sample_np
-
-    # convert back to PIL
-    return PIL.Image.fromarray(merged_np)
 
 
 class MtlDataModule(pytorch_lightning.LightningDataModule):
@@ -182,13 +145,17 @@ class MtlDataModule(pytorch_lightning.LightningDataModule):
         fashion_mnist_test = FashionMNIST(self.fashion_mnist_path, train=False)
 
         # create dataloaders
-        train_ds = CombinedDataset(mnist_train, fashion_mnist_train, mode=self.mode)
+        train_ds = CombinedDataset(
+            mnist_train, fashion_mnist_train, mode=self.mode, apply_aug=True
+        )
         val_ds = CombinedDataset(mnist_val, fashion_mnist_val, mode=self.mode)
         test_ds = CombinedDataset(
             mnist_test, fashion_mnist_test, train=False, mode=self.mode
         )
 
-        self.train_dl = DataLoader(train_ds, batch_size=self.batch_size, num_workers=1)
+        self.train_dl = DataLoader(
+            train_ds, batch_size=self.batch_size, num_workers=4, shuffle=True
+        )
         self.val_dl = DataLoader(val_ds, batch_size=self.batch_size, num_workers=1)
         self.test_dl = DataLoader(test_ds, batch_size=self.batch_size, num_workers=1)
 
@@ -501,6 +468,7 @@ class MTLModel(pytorch_lightning.LightningModule):
             step_size_up=self.cycle_steps // 2,
             step_size_down=self.cycle_steps // 2,
             cycle_momentum=False,
+            mode="triangular2",
         )
         return {
             "optimizer": opt,
@@ -520,6 +488,7 @@ def main(
     use_gpu: bool = True,
     data_folder: pathlib.Path = pathlib.Path("data"),
     experiment_name: str = None,
+    tag: str = None,
 ):
     num_steps = cycle_steps * num_cycles
 
@@ -537,10 +506,7 @@ def main(
     if experiment_name is None:
         logger = WandbLogger(project="fashion+mnist")
     else:
-        logger = WandbLogger(
-            project="fashion+mnist",
-            name=experiment_name,
-        )
+        logger = WandbLogger(project="fashion+mnist", name=experiment_name, tags=[tag])
 
     trainer = pytorch_lightning.Trainer(
         logger=logger,
@@ -548,7 +514,7 @@ def main(
             pytorch_lightning.callbacks.LearningRateMonitor(),
             pytorch_lightning.callbacks.ModelCheckpoint(monitor="val_loss"),
         ],
-        val_check_interval=100,
+        val_check_interval=cycle_steps // 2,
         check_val_every_n_epoch=None,
         max_steps=num_steps,
         devices=1,
@@ -631,4 +597,5 @@ def main_from_cfg(cfg: DictConfig):
         data_folder=pathlib.Path(cfg.log_folder),
         use_gpu=True,
         experiment_name=cfg.experiment_name,
+        tag=cfg.tag,
     )

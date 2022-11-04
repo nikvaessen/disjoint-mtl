@@ -9,6 +9,10 @@ log_folder: ${oc.env:LOG_FOLDER}/fashion+mnist
 # (:) indicates it needs to be resolved
 experiment_name: ${random_name:}
 
+# tag
+tag: null
+
+
 # config variables for hydra
 hydra:
   run:
