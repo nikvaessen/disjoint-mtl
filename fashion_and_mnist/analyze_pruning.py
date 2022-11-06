@@ -1,17 +1,18 @@
-import matplotlib
+import logging
+from pathlib import Path
+
+import pandas as pd
 import torch
-import torch.nn as nn
-import torch.nn.utils.prune as prune
 
-from matplotlib import pyplot as plt
+import seaborn as sns
+import matplotlib.pyplot as plt
+from pytorch_lightning import Trainer
 
-from experiment import MTLModel
+from experiment import MTLModel, MtlDataModule, prune_model
+import warnings
 
-
-def prune_model(model, factor):
-    for name, module in model.named_modules():
-        if isinstance(module, nn.Linear) or isinstance(module, nn.Conv2d):
-            prune.l1_unstructured(module, "weight", factor)
+warnings.filterwarnings("ignore", ".*does not have many workers.*")
+logging.getLogger("pytorch_lightning").setLevel(logging.ERROR)
 
 
 def collect_masks(model):
@@ -45,31 +46,96 @@ def compare_masks(model, other_model):
     return total_overlap / total_numel
 
 
+def eval_model(model, dm):
+    trainer = Trainer(devices=1, accelerator="gpu", enable_progress_bar=False)
+    result = trainer.test(model, dm, verbose=False)
+
+    if len(result) > 1:
+        raise ValueError
+
+    if "test_mnist_acc" in result[0]:
+        return result[0]["test_mnist_acc"]
+
+    elif "test_fashion_acc" in result[0]:
+        return result[0]["test_fashion_acc"]
+
+    else:
+        print(result)
+        raise NotImplemented()
+
+
+model = []
 prune_percentage = []
 overlap_percentage = []
+mnist_acc = []
+fashion_acc = []
 
-for i in range(1, 100):
-    model = MTLModel(model="resnet152", mode='mnist')
-    model.load_state_dict(
-        torch.load(
-            "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet152/random_init_n1.ckpt"
-        ).state_dict()#['state_dict']
-    )
+data_folder = "/home/nik/phd/repo/disjoint_mtl/data/logs/disjoint_mtl/fashion+mnist/"
+dm_mnist = MtlDataModule(
+    data_folder=Path(data_folder),
+    batch_size=256,
+    mode="mnist",
+)
+dm_fashion = MtlDataModule(
+    data_folder=Path(data_folder),
+    batch_size=256,
+    mode="fashion",
+)
 
-    # model_mnist = MTLModel.load_from_checkpoint(
-    #     "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet152/mnist_final.ckpt", model="resnet152"
-    # ).cuda()
-    # model_fashion = MTLModel.load_from_checkpoint(
-    #     "resnet152/fashion_final.ckpt",  model="resnet152"
-    # ).cuda()
-    print(i)
-    factor = i / 100
-    prune_model(model_mnist, factor)
-    prune_model(model_fashion, factor)
-    overlap = compare_masks(model_mnist, model_fashion)
+ckpt_dict = {
+    "resnet18": {
+        "mnist": "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet18/mnist_final.ckpt",
+        "fashion": "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet18/fashion_final.ckpt",
+    },
+    "resnet152": {
+        "mnist": "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet152/mnist_final.ckpt",
+        "fashion": "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet152/fashion_final.ckpt",
+    },
+}
 
-    prune_percentage.append(factor)
-    overlap_percentage.append(overlap)
+for model_version in ["resnet18", "resnet152"]:
+    for i in range(0, 99, 1):
+        print(model_version, i)
 
-plt.plot(prune_percentage, overlap_percentage)
+        model_mnist = MTLModel.load_from_checkpoint(
+            ckpt_dict[model_version]["mnist"],
+            model=model_version,
+        ).cuda()
+        model_fashion = MTLModel.load_from_checkpoint(
+            ckpt_dict[model_version]["fashion"],
+            model=model_version,
+        ).cuda()
+
+        factor = i / 100
+        prune_model(model_mnist, factor)
+        prune_model(model_fashion, factor)
+
+        overlap = compare_masks(model_mnist, model_fashion)
+
+        model.append(model_version)
+        prune_percentage.append(factor)
+        overlap_percentage.append(overlap)
+        mnist_acc.append(eval_model(model_mnist, dm_mnist))
+        fashion_acc.append(eval_model(model_fashion, dm_fashion))
+
+df = pd.DataFrame(
+    {
+        "model": model,
+        "prune_percentage": prune_percentage,
+        "overlap_percentage": overlap_percentage,
+        "mnist_acc": mnist_acc,
+        "fashion_acc": fashion_acc,
+    }
+)
+
+print(df)
+
+plt.rcParams["figure.figsize"] = (20, 10)
+fix, axes = plt.subplots(1, 3)
+
+sns.lineplot(df, x="prune_percentage", y="overlap_percentage", hue="model", ax=axes[0])
+sns.lineplot(df, x="prune_percentage", y="mnist_acc", hue="model", ax=axes[1])
+sns.lineplot(df, x="prune_percentage", y="fashion_acc", hue="model", ax=axes[2])
+
+plt.savefig("resnet18_vs_resnet152.png")
 plt.show()
