@@ -562,12 +562,15 @@ def main(
     tag: str = None,
     use_wandb: bool = False,
     fit_model: bool = True,
+    eval_model: bool = True,
     initial_checkpoint: str = None,
     initial_prune_factor: float = None,
+    save_initial_model: bool = False,
 ):
     num_steps = cycle_steps * num_cycles
 
     dm = MtlDataModule(batch_size=batch_size, mode=mode, data_folder=data_folder)
+
     model = MTLModel(
         mode=mode,
         model=model,
@@ -578,6 +581,9 @@ def main(
         cagrad_c=ca_grad_c,
         hparams={"max_steps": num_steps, "batch_size": batch_size},
     )
+
+    if save_initial_model:
+        torch.save(model, "initial_model.ckpt")
 
     if initial_checkpoint is not None:
         loaded = torch.load(initial_checkpoint)
@@ -618,9 +624,11 @@ def main(
         accelerator="gpu" if use_gpu else "cpu",
         plugins=[SLURMEnvironment(auto_requeue=False)],
     )
+
     if fit_model:
         trainer.fit(model, dm)
-    trainer.test(model, dm)
+    if eval_model:
+        trainer.test(model, dm)
 
     wandb.finish()
 
@@ -701,4 +709,6 @@ def main_from_cfg(cfg: DictConfig):
         fit_model=cfg.fit_model,
         initial_checkpoint=cfg.initial_checkpoint,
         initial_prune_factor=cfg.initial_prune_factor,
+        eval_model=cfg.eval_model,
+        save_initial_model=cfg.save_initial_model,
     )

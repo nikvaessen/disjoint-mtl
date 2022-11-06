@@ -49,12 +49,19 @@ prune_percentage = []
 overlap_percentage = []
 
 for i in range(1, 100):
-    model_mnist = MTLModel.load_from_checkpoint(
-        "/fashion_and_mnist/resnet18/mnist_final.ckpt"
-    ).cuda()
-    model_fashion = MTLModel.load_from_checkpoint(
-        "/fashion_and_mnist/resnet18/fashion_final.ckpt"
-    ).cuda()
+    model = MTLModel(model="resnet152", mode='mnist')
+    model.load_state_dict(
+        torch.load(
+            "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet152/random_init_n1.ckpt"
+        ).state_dict()#['state_dict']
+    )
+
+    # model_mnist = MTLModel.load_from_checkpoint(
+    #     "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet152/mnist_final.ckpt", model="resnet152"
+    # ).cuda()
+    # model_fashion = MTLModel.load_from_checkpoint(
+    #     "resnet152/fashion_final.ckpt",  model="resnet152"
+    # ).cuda()
     print(i)
     factor = i / 100
     prune_model(model_mnist, factor)

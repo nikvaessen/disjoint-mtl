@@ -8,10 +8,23 @@ log_folder: ${oc.env:LOG_FOLDER}/fashion+mnist
 # tag
 tag: null
 
-use_wandb: false
-initial_checkpoint: null
+# false to skip model training
 fit_model: true
-initial_prune_factor: 0.3
+
+# false to skip model evaluation
+eval_model: true
+
+# true to log results to wandb
+use_wandb: false
+
+# set to load checkpoint before train/eval
+initial_checkpoint: null
+
+# set to prune model before train/eval
+initial_prune_factor: null
+
+# save initial model
+save_initial_model: false
 
 # experiment name
 # (:) indicates it needs to be resolved
