@@ -82,28 +82,39 @@ dm_fashion = MtlDataModule(
     mode="fashion",
 )
 
+# ckpt_dict = {
+#     "resnet18": {
+#         "mnist": "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet18/mnist_final.ckpt",
+#         "fashion": "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet18/fashion_final.ckpt",
+#     },
+#     "resnet152": {
+#         "mnist": "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet152/mnist_final.ckpt",
+#         "fashion": "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet152/fashion_final.ckpt",
+#     },
+# }
+
 ckpt_dict = {
-    "resnet18": {
-        "mnist": "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet18/mnist_final.ckpt",
-        "fashion": "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet18/fashion_final.ckpt",
+    "resnet18_n1": {
+        "mnist": "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet18/mnist_n1_final.ckpt",
+        "fashion": "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet18/fashion_n1_final.ckpt",
     },
-    "resnet152": {
-        "mnist": "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet152/mnist_final.ckpt",
-        "fashion": "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet152/fashion_final.ckpt",
+    "resnet18_n2": {
+        "mnist": "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet18/mnist_n2_final.ckpt",
+        "fashion": "/home/nik/phd/repo/disjoint_mtl/fashion_and_mnist/resnet18/fashion_n2_final.ckpt",
     },
 }
 
-for model_version in ["resnet18", "resnet152"]:
-    for i in range(0, 99, 1):
+for model_version in ["resnet18_n2", "resnet18_n1"]:
+    for i in range(0, 99, 10):
         print(model_version, i)
 
         model_mnist = MTLModel.load_from_checkpoint(
             ckpt_dict[model_version]["mnist"],
-            model=model_version,
+            model="resnet18",
         ).cuda()
         model_fashion = MTLModel.load_from_checkpoint(
             ckpt_dict[model_version]["fashion"],
-            model=model_version,
+            model="resnet18",
         ).cuda()
 
         factor = i / 100
@@ -120,7 +131,7 @@ for model_version in ["resnet18", "resnet152"]:
 
 df = pd.DataFrame(
     {
-        "model": model,
+        "version": model,
         "prune_percentage": prune_percentage,
         "overlap_percentage": overlap_percentage,
         "mnist_acc": mnist_acc,
@@ -137,5 +148,5 @@ sns.lineplot(df, x="prune_percentage", y="overlap_percentage", hue="model", ax=a
 sns.lineplot(df, x="prune_percentage", y="mnist_acc", hue="model", ax=axes[1])
 sns.lineplot(df, x="prune_percentage", y="fashion_acc", hue="model", ax=axes[2])
 
-plt.savefig("resnet18_vs_resnet152.png")
+plt.savefig("resnet18_n1_vs_resnet18_n2.png")
 plt.show()
