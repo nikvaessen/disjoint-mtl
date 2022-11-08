@@ -590,7 +590,7 @@ def main(
         weight_decay=weight_decay,
         cycle_steps=cycle_steps,
         cagrad_c=ca_grad_c,
-        hparams={"max_steps": num_steps, "batch_size": batch_size},
+        hparams={"max_steps": num_steps, "batch_size": batch_size, "initial_checkpoint": initial_checkpoint},
     )
 
     if save_initial_model:
