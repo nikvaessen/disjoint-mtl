@@ -546,6 +546,17 @@ def prune_model(model, factor: float):
             prune.l1_unstructured(module, "weight", factor)
 
 
+def set_model_weights(model, checkpoint) -> pytorch_lightning.LightningModule:
+    loaded = torch.load(checkpoint)
+    if isinstance(loaded, dict):
+        model.load_state_dict(torch.load(checkpoint)["state_dict"])
+    elif isinstance(loaded, torch.nn.Module):
+        model.load_state_dict(torch.load(checkpoint).state_dict())
+    else:
+        raise ValueError(f"cannot parse {loaded=}")
+    return model
+
+
 def main(
     mode: str = "both",
     model: str = "resnet18",
