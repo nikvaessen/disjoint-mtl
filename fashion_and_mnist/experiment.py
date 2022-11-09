@@ -6,16 +6,13 @@ import argparse
 
 from typing import Optional, Dict
 
-import PIL
 import torch
 import torchmetrics
 import torchvision
 import pytorch_lightning
 
-import numpy as np
 import wandb
 
-from PIL.Image import Image
 from dotenv import load_dotenv
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.plugins.environments import SLURMEnvironment
@@ -30,9 +27,6 @@ from torchvision.datasets import FashionMNIST, MNIST
 from pytorch_lightning.loggers import WandbLogger
 
 from scipy.optimize import minimize_scalar
-
-from src.util.hydra_resolvers import random_experiment_id
-from src.util.system import get_git_revision_hash
 
 
 class CombinedDataset(Dataset):
@@ -523,6 +517,15 @@ class MTLModel(pytorch_lightning.LightningModule):
                 prog_bar=True,
             )
 
+    def on_train_start(self) -> None:
+        hparams = self.hparams
+        model_seed = hparams.model_seed
+
+        if model_seed is None:
+            self.trainer.save_checkpoint("initial_model.ckpt")
+        else:
+            self.trainer.save_checkpoint(f"initial_model_seed_{model_seed}.ckpt")
+
     def configure_optimizers(self):
         opt = Adam(self.parameters(), lr=self.base_lr, weight_decay=self.weight_decay)
         sched = CyclicLR(
@@ -576,7 +579,6 @@ def main(
     eval_model: bool = True,
     initial_checkpoint: str = None,
     initial_prune_factor: float = None,
-    save_initial_model: bool = False,
     model_seed: int = None,
 ):
     num_steps = cycle_steps * num_cycles
@@ -603,9 +605,6 @@ def main(
     )
 
     pytorch_lightning.seed_everything(run_seed)
-
-    if save_initial_model:
-        torch.save(model, "initial_model.ckpt")
 
     if initial_checkpoint is not None:
         loaded = torch.load(initial_checkpoint)
@@ -707,7 +706,6 @@ if __name__ == "__main__":
 
 def main_from_cfg(cfg: DictConfig):
     # print config
-    print(f"current git commit hash: {get_git_revision_hash()}")
     print(f"PyTorch version is {torch.__version__}")
     print(f"PyTorch Lightning version is {pytorch_lightning.__version__}")
     if "SLURM_ARRAY_TASK_ID" in os.environ:
@@ -736,6 +734,5 @@ def main_from_cfg(cfg: DictConfig):
         initial_checkpoint=cfg.initial_checkpoint,
         initial_prune_factor=cfg.initial_prune_factor,
         eval_model=cfg.eval_model,
-        save_initial_model=cfg.save_initial_model,
         model_seed=cfg.model_seed,
     )

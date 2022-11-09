@@ -29,21 +29,29 @@ def compare_masks(model, other_model):
     masks = collect_masks(model)
     other_masks = collect_masks(other_model)
 
-    total_numel = 0
+    total_masked_valued = 0
     total_overlap = 0
 
     with torch.no_grad():
         for name, mask in masks.items():
             other_mask = other_masks[name]
 
-            overlap = mask == other_mask
-            overlap_count = torch.sum(overlap).item()
-            total = torch.numel(mask)
+            values = torch.numel(mask)
+            masked_values = torch.sum(mask == 0).item()
+            assert masked_values == torch.sum(other_mask == 0).item()
 
-            total_numel += total
+            summed_mask = mask + other_mask
+            count_0 = torch.sum(summed_mask == 0).item()
+            count_1 = torch.sum(summed_mask == 1).item()
+            count_2 = torch.sum(summed_mask == 2).item()
+            assert count_0 + count_1 + count_2 == values
+
+            overlap_count = count_0
+
+            total_masked_valued += masked_values
             total_overlap += overlap_count
 
-    return total_overlap / total_numel
+    return total_overlap / total_masked_valued
 
 
 def eval_model(model, dm):
@@ -93,51 +101,52 @@ ckpt_dict = {
     },
 }
 
-for model_version in ["resnet18_n1", "resnet18_n2"]:
-    for i in range(0, 101, 10):
-        print(model_version, i)
+if __name__ == "__main__":
+    for model_version in ["resnet18_n1", "resnet18_n2"]:
+        for i in range(0, 101, 10):
+            print(model_version, i)
 
-        model_mnist = MTLModel.load_from_checkpoint(
-            ckpt_dict[model_version]["mnist"],
-            model=model_version.split("_")[0],
-        ).cuda()
-        model_fashion = MTLModel.load_from_checkpoint(
-            ckpt_dict[model_version]["fashion"],
-            model=model_version.split("_")[0],
-        ).cuda()
+            model_mnist = MTLModel.load_from_checkpoint(
+                ckpt_dict[model_version]["mnist"],
+                model=model_version.split("_")[0],
+            ).cuda()
+            model_fashion = MTLModel.load_from_checkpoint(
+                ckpt_dict[model_version]["fashion"],
+                model=model_version.split("_")[0],
+            ).cuda()
 
-        factor = i / 100
-        prune_model(model_mnist, factor)
-        prune_model(model_fashion, factor)
+            factor = i / 100
+            prune_model(model_mnist, factor)
+            prune_model(model_fashion, factor)
 
-        overlap = compare_masks(model_mnist, model_fashion)
+            overlap = compare_masks(model_mnist, model_fashion)
 
-        model.append(model_version)
-        prune_percentage.append(factor)
-        overlap_percentage.append(overlap)
-        mnist_acc.append(eval_model(model_mnist, dm_mnist))
-        fashion_acc.append(eval_model(model_fashion, dm_fashion))
+            model.append(model_version)
+            prune_percentage.append(factor)
+            overlap_percentage.append(overlap)
+            mnist_acc.append(eval_model(model_mnist, dm_mnist))
+            fashion_acc.append(eval_model(model_fashion, dm_fashion))
 
-df = pd.DataFrame(
-    {
-        "version": model,
-        "prune_percentage": prune_percentage,
-        "overlap_percentage": overlap_percentage,
-        "mnist_acc": mnist_acc,
-        "fashion_acc": fashion_acc,
-    }
-)
+    df = pd.DataFrame(
+        {
+            "version": model,
+            "prune_percentage": prune_percentage,
+            "overlap_percentage": overlap_percentage,
+            "mnist_acc": mnist_acc,
+            "fashion_acc": fashion_acc,
+        }
+    )
 
-print(df)
+    print(df)
 
-plt.rcParams["figure.figsize"] = (20, 10)
-fix, axes = plt.subplots(1, 3)
+    plt.rcParams["figure.figsize"] = (20, 10)
+    fix, axes = plt.subplots(1, 3)
 
-sns.lineplot(
-    df, x="prune_percentage", y="overlap_percentage", hue="version", ax=axes[0]
-)
-sns.lineplot(df, x="prune_percentage", y="mnist_acc", hue="version", ax=axes[1])
-sns.lineplot(df, x="prune_percentage", y="fashion_acc", hue="version", ax=axes[2])
+    sns.lineplot(
+        df, x="prune_percentage", y="overlap_percentage", hue="version", ax=axes[0]
+    )
+    sns.lineplot(df, x="prune_percentage", y="mnist_acc", hue="version", ax=axes[1])
+    sns.lineplot(df, x="prune_percentage", y="fashion_acc", hue="version", ax=axes[2])
 
-plt.savefig("resnet18_n1_vs_resnet18_n2.png")
-plt.show()
+    plt.savefig("resnet18_n1_vs_resnet18_n2.png")
+    plt.show()

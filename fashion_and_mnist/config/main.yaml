@@ -23,9 +23,6 @@ initial_checkpoint: null
 # set to prune model before train/eval
 initial_prune_factor: null
 
-# save initial model
-save_initial_model: false
-
 # seed from which model weights are generated
 model_seed: null
 

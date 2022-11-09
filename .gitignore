@@ -33,3 +33,4 @@ tmp/
 /mtl_*/data*/
 /mtl_*/lightning_logs/
 /wandb/
+/fashion_and_mnist/.ipynb_checkpoints/
