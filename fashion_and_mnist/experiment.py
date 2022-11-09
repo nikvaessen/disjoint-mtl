@@ -635,7 +635,7 @@ def main(
         logger=logger,
         callbacks=[
             pytorch_lightning.callbacks.LearningRateMonitor(),
-            pytorch_lightning.callbacks.ModelCheckpoint(monitor="val_loss"),
+            pytorch_lightning.callbacks.ModelCheckpoint(monitor="val_loss", save_top_k=10),
         ],
         val_check_interval=cycle_steps // 2,
         check_val_every_n_epoch=None,
