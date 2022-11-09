@@ -577,10 +577,13 @@ def main(
     initial_checkpoint: str = None,
     initial_prune_factor: float = None,
     save_initial_model: bool = False,
+    model_seed: int = None,
 ):
     num_steps = cycle_steps * num_cycles
+    run_seed = torch.random.seed()
 
-    dm = MtlDataModule(batch_size=batch_size, mode=mode, data_folder=data_folder)
+    if model_seed is not None:
+        pytorch_lightning.seed_everything(model_seed)
 
     model = MTLModel(
         mode=mode,
@@ -590,8 +593,14 @@ def main(
         weight_decay=weight_decay,
         cycle_steps=cycle_steps,
         cagrad_c=ca_grad_c,
-        hparams={"max_steps": num_steps, "batch_size": batch_size, "initial_checkpoint": initial_checkpoint},
+        hparams={
+            "max_steps": num_steps,
+            "batch_size": batch_size,
+            "initial_checkpoint": initial_checkpoint,
+        },
     )
+
+    pytorch_lightning.seed_everything(run_seed)
 
     if save_initial_model:
         torch.save(model, "initial_model.ckpt")
@@ -635,6 +644,8 @@ def main(
         accelerator="gpu" if use_gpu else "cpu",
         plugins=[SLURMEnvironment(auto_requeue=False)],
     )
+
+    dm = MtlDataModule(batch_size=batch_size, mode=mode, data_folder=data_folder)
 
     if fit_model:
         trainer.fit(model, dm)
@@ -722,4 +733,5 @@ def main_from_cfg(cfg: DictConfig):
         initial_prune_factor=cfg.initial_prune_factor,
         eval_model=cfg.eval_model,
         save_initial_model=cfg.save_initial_model,
+        model_seed=cfg.model_seed,
     )
