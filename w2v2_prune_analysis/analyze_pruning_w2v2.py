@@ -1,3 +1,4 @@
+import pandas as pd
 import torch
 import json
 
@@ -33,7 +34,7 @@ def collect_masks(model):
     return mask_dict
 
 
-def compare_masks(model, other_model):
+def compare_masks(model, other_model, layer_idx: int = None):
     masks = collect_masks(model)
     other_masks = collect_masks(other_model)
 
@@ -42,6 +43,9 @@ def compare_masks(model, other_model):
 
     with torch.no_grad():
         for name, mask in masks.items():
+            if layer_idx is not None and str(layer_idx) not in name:
+                continue
+
             other_mask = other_masks[name]
 
             values = torch.numel(mask)
@@ -137,10 +141,13 @@ def load_sv_model():
 
 
 def main():
+    layer_wise = True
     prune_rate = []
     overlap_rate = []
+    layer_label = []
 
     for i in range(1, 101, 1):
+        print(i)
         asr_model = load_asr_model()
         sv_model = load_sv_model()
 
@@ -148,22 +155,33 @@ def main():
         prune_model(asr_model, factor)
         prune_model(sv_model, factor)
 
-        overlap = compare_masks(asr_model, sv_model)
+        if layer_wise:
+            for layer_idx in range(0, 12):
+                overlap = compare_masks(asr_model, sv_model, layer_idx)
 
-        prune_rate.append(factor)
-        overlap_rate.append(overlap)
+                prune_rate.append(factor)
+                overlap_rate.append(overlap)
+                layer_label.append(str(layer_idx))
+        else:
+            overlap = compare_masks(asr_model, sv_model)
 
-        print(i, overlap)
+            prune_rate.append(factor)
+            overlap_rate.append(overlap)
+            layer_label.append('all')
 
     import seaborn as sns
     import matplotlib.pyplot as plt
 
-    sns.lineplot(x=prune_rate, y=overlap_rate).set(
-        title="Overlap between ASR and SV wav2vec2 model",
-        xlabel="Pruning rate",
-        ylabel="Overlap rate",
+    df_plot = pd.DataFrame(
+        {"Pruning rate": prune_rate, "Overlap rate": overlap_rate, "label": layer_label}
     )
-    plt.savefig("asr_vs_sv.png")
+
+    print(df_plot)
+
+    sns.lineplot(data=df_plot, x="Pruning rate", y="Overlap rate", hue="label").set(
+        title="Overlap between ASR and SV wav2vec2 model",
+    )
+    plt.savefig("asr_vs_sv___per_layer.png")
 
 
 if __name__ == "__main__":
