@@ -260,6 +260,14 @@ class SpeechRecognitionLightningModule(BaseLightningModule):
             )
             label_transcriptions = batch.transcriptions
 
+        if batch_idx < 10:
+            with (pathlib.Path.cwd() / "test_asr_outputs.txt").open("a") as f:
+                f.write(
+                    f"{batch_idx=} {dataloader_idx=}\n"
+                    f"label={label_transcriptions}\n"
+                    f"hypot={predicted_transcriptions}\n\n"
+                )
+
         return {
             "transcription": predicted_transcriptions,
             "ground_truth": label_transcriptions,

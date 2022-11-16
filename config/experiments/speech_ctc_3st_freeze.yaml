@@ -2,8 +2,8 @@
 
 defaults:
   - override /callbacks: speech_default
-  - override /data/module: speech_librispeech_960h
-  - override /data/speech_datapipe: default_datapipe
+  - override /data/module: speech_librispeech_960h.yaml
+  - override /data/pipe: speech_datapipe
   - override /network: speech_wav2vec2_linear
   - override /optim/algo: adam
   - override /optim/schedule: tri_stage

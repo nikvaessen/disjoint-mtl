@@ -27,6 +27,7 @@ test_names:
   - vox1_o
   - vox1_e
   - vox1_h
+  - sw
 
 # path to each shard of test set (only 1 dir each)
 test_shards:
@@ -38,6 +39,7 @@ test_shards:
   - ${oc.env:VOXCELEB_DIR}/shards/vox1_test_o
   - ${oc.env:VOXCELEB_DIR}/shards/vox1_test_e
   - ${oc.env:VOXCELEB_DIR}/shards/vox1_test_h
+  - ${oc.env:SWITCHBOARD_DIR}/shards/test
 
 # path to each trial list matching the test set
 test_trials:
@@ -49,3 +51,4 @@ test_trials:
   - ${oc.env:VOXCELEB_DIR}/meta/veri_test2.txt
   - ${oc.env:VOXCELEB_DIR}/meta/list_test_all2.txt
   - ${oc.env:VOXCELEB_DIR}/meta/list_test_hard2.txt
+  - ${oc.env:SWITCHBOARD_DIR}/meta/trials_eval.txt

@@ -167,7 +167,7 @@ def main():
 
             prune_rate.append(factor)
             overlap_rate.append(overlap)
-            layer_label.append('all')
+            layer_label.append("all")
 
     import seaborn as sns
     import matplotlib.pyplot as plt
