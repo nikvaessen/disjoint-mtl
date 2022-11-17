@@ -15,6 +15,13 @@ trainer:
   val_check_interval: 5000
   precision: 16
 
+data:
+  pipe:
+  train_dp:
+    chunk_strategy: random
+    chunk_size_sec: 3
+    batch_size: 64
+
 network:
   freeze_transformer: False
   head_cfg:
