@@ -3,13 +3,14 @@ import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import pytorch_lightning as pl
 
 from torch.utils.data import DataLoader, random_split
 
 from torchvision.datasets import MNIST
 from torchvision.transforms import transforms
 
-import pytorch_lightning as pl
+from pytorch_lightning.plugins.environments import SLURMEnvironment
 
 
 class LitAutoEncoder(pl.LightningModule):
@@ -47,7 +48,9 @@ def main():
     train, val = random_split(dataset, [55000, 5000])
 
     autoencoder = LitAutoEncoder()
-    trainer = pl.Trainer(devices=1, accelerator="gpu")
+    trainer = pl.Trainer(
+        devices=1, accelerator="gpu", plugins=SLURMEnvironment(auto_requeue=False)
+    )
     trainer.fit(autoencoder, DataLoader(train), DataLoader(val))
 
 
