@@ -16,7 +16,15 @@ from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.types import TRAIN_DATALOADERS, EVAL_DATALOADERS
 
 from data_utility.eval.speaker.evaluator import SpeakerTrial
-from data_utility.pipe.builder import SpeakerRecognitionDataPipeBuilder
+from data_utility.pipe.builder import (
+    SpeakerRecognitionDataPipeBuilder,
+    SpeechRecognitionDataPipeBuilder,
+)
+
+from src.data.module import (
+    SpeechRecognitionDataModuleConfig,
+    SpeakerRecognitionDataModuleConfig,
+)
 from src.util.config_util import CastingConfig
 
 
@@ -25,51 +33,37 @@ from src.util.config_util import CastingConfig
 
 
 @dataclass
-class MTLDataModuleConfig(CastingConfig):
-    # name of dataset
-    name: str
-
-    # path to folder(s) containing train data
-    train_shard_paths: List[pathlib.Path]
-
-    # path to folder(s) containing val data
-    val_shard_paths: List[pathlib.Path]
-
-    # shard pattern
-    shard_file_pattern: str
-
-    # path to meta file for speaker info (ID for train and val)
-    speaker_json: pathlib.Path
-
-    # name of each test set
-    test_names: List[str]
-
-    # path to each shard of test set (only 1 dir each)
-    test_shards: List[pathlib.Path]
-
-    # path to each trial list matching the test set
-    test_trials: List[pathlib.Path]
+class DisjointMTLDataModuleConfig(CastingConfig):
+    speech_dm_config: SpeechRecognitionDataModuleConfig
+    speaker_dm_config: SpeakerRecognitionDataModuleConfig
 
 
 ########################################################################################
 # implementation
 
 
-class SpeakerRecognitionDataModule(LightningDataModule):
+class DisjointMTLDataModule(LightningDataModule):
     def __init__(
         self,
-        cfg: SpeakerRecognitionDataModuleConfig,
-        train_pipe_builder: SpeakerRecognitionDataPipeBuilder,
-        val_pipe_builder: SpeakerRecognitionDataPipeBuilder,
-        test_pipe_builder: SpeakerRecognitionDataPipeBuilder,
+        cfg: DisjointMTLDataModuleConfig,
+        speaker_train_pipe_builder: SpeakerRecognitionDataPipeBuilder,
+        speaker_val_pipe_builder: SpeakerRecognitionDataPipeBuilder,
+        speaker_test_pipe_builder: SpeakerRecognitionDataPipeBuilder,
+        speech_train_pipe_builder: SpeechRecognitionDataPipeBuilder,
+        speech_val_pipe_builder: SpeechRecognitionDataPipeBuilder,
+        speech_test_pipe_builder: SpeechRecognitionDataPipeBuilder,
     ):
-        super(SpeakerRecognitionDataModule, self).__init__()
+        super(DisjointMTLDataModule, self).__init__()
 
         self.cfg = cfg
 
-        self.train_pipe_builder = train_pipe_builder
-        self.val_pipe_builder = val_pipe_builder
-        self.test_pipe_builder = test_pipe_builder
+        self.speaker_train_pipe_builder = speaker_train_pipe_builder
+        self.speaker_val_pipe_builder = speaker_val_pipe_builder
+        self.speaker_test_pipe_builder = speaker_test_pipe_builder
+
+        self.speech_train_pipe_builder = speech_train_pipe_builder
+        self.speech_val_pipe_builder = speech_val_pipe_builder
+        self.speech_test_pipe_builder = speech_test_pipe_builder
 
         # set _num_speakers and set speaker_to_idx on pipe builders
         self._num_speakers = None

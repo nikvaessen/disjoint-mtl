@@ -148,7 +148,7 @@ class MTLLightningModule(BaseLightningModule):
 
     def training_step(
         self,
-        batch: SpeechAndSpeakerRecognitionBatch,
+        batch: Union[SpeechAndSpeakerRecognitionBatch, Tuple[SpeechRecognitionbatch, SpeakerRecognitionBatch]],
         batch_idx: int,
         optimized_idx: Optional[int] = None,
     ) -> STEP_OUTPUT:

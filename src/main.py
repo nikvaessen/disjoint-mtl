@@ -360,9 +360,7 @@ def construct_logger(cfg: DictConfig):
             tag.extend(cfg.tag)
 
         logger = WandbLogger(
-            project=cfg.project_name,
-            name=cfg.experiment_name,
-            tags=tag,
+            project=cfg.project_name, name=cfg.experiment_name, tags=tag
         )
         # init the wandb agent
         _ = logger.experiment
@@ -397,6 +395,12 @@ def run_train_eval_script(cfg: DictConfig):
 
     # construct data module
     dm = construct_data_module(cfg)
+
+    for x in dm.train_dataloader():
+        print(x)
+        break
+
+    exit()
 
     # create callbacks
     callbacks = construct_callbacks(cfg)
