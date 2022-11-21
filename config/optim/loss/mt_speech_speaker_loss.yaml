@@ -13,7 +13,7 @@ ctc_blank_idx: 0
 # enable dynamic scaling (equalizes the two losses by
 # scaling it with a constant determined at each time step)
 # methods are 'min, 'max', 'dwa', 'static', or null (no scaling)
-scale_method: min
+scale_method: static
 
 # settings for DWA scaling (if scale_method=dwa)
 dwa_temperature: 2
