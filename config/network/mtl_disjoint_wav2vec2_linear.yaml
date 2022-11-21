@@ -1,4 +1,4 @@
-_target_: src.networks.wav2vec2.w2v2_mtl.Wav2vec2ForMTLConfig
+_target_: src.network.wav2vec2.w2v2_mtl.Wav2vec2ForDisjointMTLConfig
 
 # settings for wav2vec2 architecture
 huggingface_id: "facebook/wav2vec2-base"
@@ -15,7 +15,7 @@ use_gradient_checkpointing: true
 
 # head on top of wav2vec2 for speaker recognition
 speaker_head_cfg:
-  _target_: src.networks.heads.LinearProjectionHeadConfig
+  _target_: src.network.heads.LinearProjectionHeadConfig
   use_projection_layer: false
   projection_layer_dim: 128
   drop_prob: 0.05
@@ -25,7 +25,7 @@ speaker_head_cfg:
   train_random_chunk_size: 40 # ~25 ms per frame. 40==1 second chunk size
 
 speech_head_cfg:
-  _target_: src.networks.heads.LinearHeadConfig
+  _target_: src.network.heads.LinearHeadConfig
   blank_token_idx: ${optim.loss.ctc_blank_idx}
 
   blank_initial_bias: 10

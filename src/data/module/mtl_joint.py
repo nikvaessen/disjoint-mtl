@@ -26,7 +26,7 @@ from src.util.config_util import CastingConfig
 
 
 @dataclass
-class MTLDataModuleConfig(CastingConfig):
+class JointMTLDataModuleConfig(CastingConfig):
     # name of dataset
     name: str
 
@@ -59,15 +59,15 @@ class MTLDataModuleConfig(CastingConfig):
 # implementation
 
 
-class MTLDataModule(LightningDataModule):
+class JointMTLDataModule(LightningDataModule):
     def __init__(
         self,
-        cfg: MTLDataModuleConfig,
+        cfg: JointMTLDataModuleConfig,
         train_pipe_builder: SpeechAndSpeakerRecognitionDataPipeBuilder,
         val_pipe_builder: SpeechAndSpeakerRecognitionDataPipeBuilder,
         test_pipe_builder: SpeechAndSpeakerRecognitionDataPipeBuilder,
     ):
-        super(MTLDataModule, self).__init__()
+        super(JointMTLDataModule, self).__init__()
 
         self.cfg = cfg
 

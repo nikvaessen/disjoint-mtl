@@ -14,8 +14,8 @@ from omegaconf import DictConfig
 from transformers import WavLMModel
 
 from data_utility.eval.speaker.evaluator import SpeakerTrial
-from src.networks.heads import SpeakerHeadConfig, construct_speaker_head
-from src.networks.speaker_recognition_module import SpeakerRecognitionLightningModule
+from src.network.heads import SpeakerHeadConfig, construct_speaker_head
+from src.network.speaker_recognition_module import SpeakerRecognitionLightningModule
 from src.util.freeze import FreezeManager
 
 

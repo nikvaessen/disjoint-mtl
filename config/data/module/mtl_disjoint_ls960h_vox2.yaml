@@ -1,0 +1,74 @@
+_target_: src.data.module.DisjointedMTLDataModuleConfig
+
+speech_dm_cfg:
+  _target_: src.data.module.SpeechRecognitionDataModuleConfig
+
+  # name of dataset
+  name: ls960h
+
+  # path to folder(s) containing train data
+  train_shard_paths:
+    - ${oc.env:LIBRISPEECH_DIR}/shards/train-clean-100
+    - ${oc.env:LIBRISPEECH_DIR}/shards/train-clean-360
+    - ${oc.env:LIBRISPEECH_DIR}/shards/train-other-500
+
+  # path to folder(s) containing val data
+  val_shard_paths:
+    - ${oc.env:LIBRISPEECH_DIR}/shards/val-clean-100
+    - ${oc.env:LIBRISPEECH_DIR}/shards/val-clean-360
+    - ${oc.env:LIBRISPEECH_DIR}/shards/val-other-500
+
+  # shard pattern
+  shard_file_pattern: "*.*.tar*"
+
+  # path to meta file for mapping vocabulary to predicton IDs
+  char_vocab_json: ${oc.env:LIBRISPEECH_DIR}/meta/character_vocabulary.json
+
+  # name of each test set
+  test_names:
+    - ls_dev_clean
+    - ls_dev_other
+
+  # path to each shard of test set (only 1 dir each)
+  test_shards:
+    - ${oc.env:LIBRISPEECH_DIR}/shards/dev-clean
+    - ${oc.env:LIBRISPEECH_DIR}/shards/dev-other
+
+speaker_dm_cfg:
+  _target_: src.data.module.SpeakerRecognitionDataModuleConfig
+
+  # name of dataset
+  name: vox2
+
+  # path to folder(s) containing train data
+  train_shard_paths:
+    - ${oc.env:VOXCELEB_DIR}/shards/vox2_train
+
+  # path to folder(s) containing val data
+  val_shard_paths:
+    - ${oc.env:VOXCELEB_DIR}/shards/vox2_val
+
+  # shard pattern
+  shard_file_pattern: "*.*.tar*"
+
+  # path to meta file for speaker info (ID for train and val)
+  speaker_json: ${oc.env:VOXCELEB_DIR}/meta/speakers_train.json
+
+  # name of each test set
+  test_names:
+    - vox2_dev
+    - ls_dev_clean
+    - ls_dev_other
+
+  # path to each shard of test set (only 1 dir each)
+  test_shards:
+    - ${oc.env:VOXCELEB_DIR}/shards/vox2_dev
+    - ${oc.env:LIBRISPEECH_DIR}/shards/dev-clean
+    - ${oc.env:LIBRISPEECH_DIR}/shards/dev-other
+
+  # path to each trial list matching the test set
+  test_trials:
+    - ${oc.env:VOXCELEB_DIR}/meta/trials_dev.txt
+    - ${oc.env:LIBRISPEECH_DIR}/meta/trials_dev_clean.txt
+    - ${oc.env:LIBRISPEECH_DIR}/meta/trials_dev_other.txt
+

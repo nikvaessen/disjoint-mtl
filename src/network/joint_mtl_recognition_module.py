@@ -29,8 +29,8 @@ from data_utility.pipe.containers import (
     SpeechRecognitionBatch,
     SpeechAndSpeakerRecognitionBatch,
 )
-from src.networks.base_lightning_module import BaseLightningModule
-from src.networks.speaker_recognition_module import evaluate_embeddings
+from src.network.base_lightning_module import BaseLightningModule
+from src.network.speaker_recognition_module import evaluate_embeddings
 from src.optim.loss.mt_speech_speaker_loss import MTSpeechAndSpeakerLoss
 
 ########################################################################################
@@ -41,7 +41,7 @@ from src.optim.loss.mt_speech_speaker_loss import MTSpeechAndSpeakerLoss
 log = logging.getLogger(__name__)
 
 
-class MTLLightningModule(BaseLightningModule):
+class JointMTLLightningModule(BaseLightningModule):
     def __init__(
         self,
         hyperparameter_config: DictConfig,

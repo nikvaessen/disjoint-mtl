@@ -1,57 +1,58 @@
-train_dp:
-  _target_: data_utility.pipe.builder.SpeechRecognitionDataPipeBuilderConfig
+speech:
+  train_dp:
+    _target_: data_utility.pipe.builder.SpeechRecognitionDataPipeBuilderConfig
 
-  # potential compression of shards
-  tar_read_mode: 'r'  # depends on compression or not
+    # potential compression of shards
+    tar_read_mode: 'r'  # depends on compression or not
 
-  # parameters determining randomness
-  shuffle_buffer_before: 500
-  shuffle_buffer_after: 10
-  bucket_buffer: 15
+    # parameters determining randomness
+    shuffle_buffer_before: 500
+    shuffle_buffer_after: 10
+    bucket_buffer: 15
 
-  # batching
-  max_tokens: 3_200_000
-  max_len: 320_000
+    # batching
+    max_tokens: 3_200_000
+    max_len: 320_000
 
-  # logic for giving each worker equal number of data
-  allow_partial_shards: true
-  num_workers: 5
+    # logic for giving each worker equal number of data
+    allow_partial_shards: true
+    num_workers: 5
 
-val_dp:
-  _target_: data_utility.pipe.builder.SpeechRecognitionDataPipeBuilderConfig
+  val_dp:
+    _target_: data_utility.pipe.builder.SpeechRecognitionDataPipeBuilderConfig
 
-  # potential compression of shards
-  tar_read_mode: 'r'  # depends on compression or not
+    # potential compression of shards
+    tar_read_mode: 'r'  # depends on compression or not
 
-  # parameters determining randomness
-  shuffle_buffer_before: 500
-  shuffle_buffer_after: 10
-  bucket_buffer: 15
+    # parameters determining randomness
+    shuffle_buffer_before: 500
+    shuffle_buffer_after: 10
+    bucket_buffer: 15
 
-  # batching
-  batch_size: 8
-  drop_last: false
+    # batching
+    batch_size: 8
+    drop_last: false
 
-  # logic for giving each worker equal number of data
-  allow_partial_shards: true
-  num_workers: 1
+    # logic for giving each worker equal number of data
+    allow_partial_shards: true
+    num_workers: 1
 
-test_dp:
-  _target_: data_utility.pipe.builder.SpeechRecognitionDataPipeBuilderConfig
+  test_dp:
+    _target_: data_utility.pipe.builder.SpeechRecognitionDataPipeBuilderConfig
 
-  # potential compression of shards
-  tar_read_mode: 'r'  # depends on compression or not
+    # potential compression of shards
+    tar_read_mode: 'r'  # depends on compression or not
 
-  # parameters determining randomness
-  shuffle_buffer_before: 500
-  shuffle_buffer_after: 10
-  bucket_buffer: 15
+    # parameters determining randomness
+    shuffle_buffer_before: 500
+    shuffle_buffer_after: 10
+    bucket_buffer: 15
 
-  # batching
-  batch_size: 1
-  drop_last: false
+    # batching
+    batch_size: 1
+    drop_last: false
 
-  # logic for giving each worker equal number of data
-  allow_partial_shards: true
-  num_workers: 1
+    # logic for giving each worker equal number of data
+    allow_partial_shards: true
+    num_workers: 1
 

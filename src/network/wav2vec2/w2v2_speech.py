@@ -1,21 +1,20 @@
 ########################################################################################
 #
-# Implement wav2vec2 as a speaker recognition network
+# Implement wav2vec2 as a speech recognition network.
 #
 # Author(s): Nik Vaessen
 ########################################################################################
 
 from dataclasses import dataclass
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Dict, Tuple
 
 import torch as t
 
 from omegaconf import DictConfig
 from transformers import Wav2Vec2Model
 
-from data_utility.eval.speaker.evaluator import SpeakerTrial
-from src.networks.heads import SpeakerHeadConfig, construct_speaker_head
-from src.networks.speaker_recognition_module import SpeakerRecognitionLightningModule
+from src.network.heads import SpeechHeadConfig, construct_speech_head
+from src.network.speech_recognition_module import SpeechRecognitionLightningModule
 from src.util.freeze import FreezeManager
 
 
@@ -24,7 +23,7 @@ from src.util.freeze import FreezeManager
 
 
 @dataclass
-class Wav2vec2ForSpeakerRecognitionConfig:
+class Wav2vec2ForSpeechRecognitionConfig:
     # settings for wav2vec2 architecture
     huggingface_id: str
     reset_weights: bool
@@ -39,32 +38,31 @@ class Wav2vec2ForSpeakerRecognitionConfig:
     num_steps_freeze_transformer: Optional[int]
 
     # head on top of wav2vec2 for speaker recognition
-    head_cfg: SpeakerHeadConfig
+    head_cfg: SpeechHeadConfig
 
 
 ########################################################################################
 # complete network
 
 
-class Wav2vec2ForSpeakerRecognition(SpeakerRecognitionLightningModule):
+class Wav2vec2ForSpeechRecognition(SpeechRecognitionLightningModule):
     def __init__(
         self,
         root_hydra_config: DictConfig,
         loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
-        num_speakers: int,
-        test_pairs: List[List[SpeakerTrial]],
+        idx_to_char: Dict[int, str],
         test_names: List[str],
-        cfg: Wav2vec2ForSpeakerRecognitionConfig,
+        cfg: Wav2vec2ForSpeechRecognitionConfig,
     ):
         super().__init__(
-            root_hydra_config,
-            loss_fn_constructor,
-            num_speakers,
-            test_pairs,
-            test_names,
+            hyperparameter_config=root_hydra_config,
+            loss_fn_constructor=loss_fn_constructor,
+            idx_to_char=idx_to_char,
+            test_names=test_names,
         )
 
         self.cfg = cfg
+        self.vocab_size = len(idx_to_char)
 
         self.wav2vec2: Wav2Vec2Model = Wav2Vec2Model.from_pretrained(
             self.cfg.huggingface_id
@@ -80,10 +78,10 @@ class Wav2vec2ForSpeakerRecognition(SpeakerRecognitionLightningModule):
         else:
             raise ValueError("unable to determine embedding size}")
 
-        self.head = construct_speaker_head(
+        self.head = construct_speech_head(
             self.cfg.head_cfg,
             representation_dim=self.embedding_size,
-            classification_dim=self.num_speakers,
+            classification_dim=self.vocab_size,
         )
 
         # freeze logic
@@ -107,20 +105,49 @@ class Wav2vec2ForSpeakerRecognition(SpeakerRecognitionLightningModule):
             num_steps_frozen=self.cfg.num_steps_freeze_transformer,
         )
 
-    @property
-    def speaker_embedding_size(self):
-        return self.head.speaker_embedding_size
+    def compute_embedding_sequence(
+        self, input_tensor: t.Tensor, lengths: List[int]
+    ) -> Tuple[t.Tensor, List[int]]:
+        sequence_output = self.wav2vec2(
+            input_values=input_tensor,
+            attention_mask=self._construct_attention_mask(
+                num_audio_samples=lengths,
+                device=self.device,
+            ),
+        ).last_hidden_state
+        sequence_lengths = self._compute_feature_extractor_lengths(lengths)
 
-    def compute_speaker_embedding(self, input_tensor: t.Tensor) -> t.Tensor:
-        sequence = self.wav2vec2(input_tensor).last_hidden_state
-        embedding = self.head.compute_embedding(sequence)
+        return sequence_output, sequence_lengths
 
-        return embedding
+    def _construct_attention_mask(self, num_audio_samples: List[int], device: str):
+        assert len(num_audio_samples) >= 1
 
-    def compute_speaker_prediction(self, embedding_tensor: t.Tensor) -> t.Tensor:
-        logits = self.head.compute_prediction(embedding_tensor)
+        # init assumes all tokens are attended to
+        bs = len(num_audio_samples)
+        max_num_audio_samples = max(num_audio_samples)
+        attention_mask = t.ones((bs, max_num_audio_samples), dtype=t.long)
 
-        return logits
+        for idx, length in enumerate(num_audio_samples):
+            assert length >= 0
+
+            # set each token which is 'padding' to 0
+            attention_mask[idx, length:] = 0
+
+        return attention_mask.to(device=device)
+
+    def _compute_feature_extractor_lengths(self, num_audio_samples: List[int]):
+        num_feature_lengths = self.wav2vec2._get_feat_extract_output_lengths(
+            t.LongTensor(num_audio_samples)
+        ).tolist()
+
+        return num_feature_lengths
+
+    def compute_vocabulary_prediction(
+        self, embedding_tensor: t.Tensor, lengths: List[int]
+    ) -> Tuple[t.Tensor, List[int]]:
+        letter_prediction = self.head(embedding_tensor)
+
+        return letter_prediction, lengths
 
     def on_train_start(self) -> None:
         self.freeze_cnn.on_train_start()

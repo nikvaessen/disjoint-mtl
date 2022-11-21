@@ -24,7 +24,7 @@ from data_utility.eval.speech.transform import (
     decode_predictions_greedy,
 )
 from data_utility.pipe.containers import SpeechRecognitionBatch
-from src.networks.base_lightning_module import BaseLightningModule
+from src.network.base_lightning_module import BaseLightningModule
 from src.optim.loss.ctc_loss import CtcLoss
 
 ########################################################################################

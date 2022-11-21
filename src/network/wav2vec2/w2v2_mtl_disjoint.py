@@ -20,7 +20,7 @@ from src.networks.heads import (
     construct_speaker_head,
     SpeakerHeadConfig,
 )
-from src.networks.mtl_recognition_module import MTLLightningModule
+from src.networks.joint_mtl_recognition_module import JointMTLLightningModule
 from src.util.freeze import FreezeManager
 
 
@@ -29,7 +29,7 @@ from src.util.freeze import FreezeManager
 
 
 @dataclass
-class Wav2vec2ForMTLConfig:
+class Wav2vec2ForDisjointMTLConfig:
     # settings for wav2vec2 architecture
     huggingface_id: str
     reset_weights: bool
@@ -52,7 +52,7 @@ class Wav2vec2ForMTLConfig:
 # complete network
 
 
-class Wav2vec2ForMTL(MTLLightningModule):
+class Wav2vec2ForDisjointMTL(JointMTLLightningModule):
     def __init__(
         self,
         root_hydra_config: DictConfig,
@@ -61,7 +61,7 @@ class Wav2vec2ForMTL(MTLLightningModule):
         num_speakers: int,
         test_pairs: List[List[SpeakerTrial]],
         test_names: List[str],
-        cfg: Wav2vec2ForMTLConfig,
+        cfg: Wav2vec2ForDisjointMTLConfig,
     ):
         super().__init__(
             hyperparameter_config=root_hydra_config,

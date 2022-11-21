@@ -1,9 +1,9 @@
 defaults:
   - _self_
   - callbacks: mt_default
-  - data/module: mtl_librispeech_960h
+  - data/module: mtl_joint_librispeech_960h
   - data/pipe: mtl_datapipe
-  - network: mtl_wav2vec2_linear
+  - network: mtl_joint_wav2vec2_linear
   - optim/algo: adam
   - optim/schedule: tri_stage
   - optim/loss: mt_speech_speaker_loss

@@ -1,4 +1,4 @@
-_target_: src.networks.wavlm.wavlm_speaker.WavLMForSpeakerRecognitionConfig
+_target_: src.network.wavlm.wavlm_speaker.WavLMForSpeakerRecognitionConfig
 
 # settings for wav2vec2 architecture
 huggingface_id: "microsoft/wavlm-base-plus"
@@ -15,7 +15,7 @@ use_gradient_checkpointing: true
 
 # head on top of wav2vec2 for speaker recognition
 head_cfg:
-  _target_: src.networks.heads.LinearProjectionHeadConfig
+  _target_: src.network.heads.LinearProjectionHeadConfig
   projection_layer_dim: 128
   drop_prob: 0.05
   use_cosine_linear: false

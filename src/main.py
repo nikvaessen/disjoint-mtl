@@ -27,7 +27,6 @@ from pytorch_lightning.plugins.environments import SLURMEnvironment
 from data_utility.pipe.builder import (
     SpeakerRecognitionDataPipeBuilder,
     SpeechRecognitionDataPipeBuilder,
-    SpeechAndSpeakerRecognitionDataPipeBuilderConfig,
     SpeechAndSpeakerRecognitionDataPipeBuilder,
 )
 from src.data.module import (
@@ -36,16 +35,20 @@ from src.data.module import (
     SpeakerRecognitionDataModuleConfig,
     SpeakerRecognitionDataModule,
 )
-from src.data.module.mtl import MTLDataModule, MTLDataModuleConfig
-from src.networks.wav2vec2 import (
+from src.data.module.mtl_joint import JointMTLDataModule, JointMTLDataModuleConfig
+from src.data.module.mtl_disjoint import (
+    DisjointMTLDataModuleConfig,
+    DisjointMTLDataModule,
+)
+from src.network.wav2vec2 import (
     Wav2vec2ForSpeakerRecognitionConfig,
     Wav2vec2ForSpeakerRecognition,
     Wav2vec2ForSpeechRecognitionConfig,
     Wav2vec2ForSpeechRecognition,
-    Wav2vec2ForMTLConfig,
-    Wav2vec2ForMTL,
+    Wav2vec2ForJointMTLConfig,
+    Wav2vec2ForJointMTL,
 )
-from src.networks.wavlm import (
+from src.network.wavlm import (
     WavLMForSpeakerRecognitionConfig,
     WavLMForSpeakerRecognition,
     WavLMForSpeechRecognitionConfig,
@@ -62,32 +65,36 @@ log = logging.getLogger(__name__)
 
 
 def construct_speech_data_pipe_builders(cfg: DictConfig):
-    train_dp = SpeechRecognitionDataPipeBuilder(cfg=instantiate(cfg.data.pipe.train_dp))
-    val_dp = SpeechRecognitionDataPipeBuilder(cfg=instantiate(cfg.data.pipe.val_dp))
-    test_dp = SpeechRecognitionDataPipeBuilder(cfg=instantiate(cfg.data.pipe.test_dp))
+    build_cfg = cfg.data.pipe.speech
+
+    train_dp = SpeechRecognitionDataPipeBuilder(cfg=instantiate(build_cfg.train_dp))
+    val_dp = SpeechRecognitionDataPipeBuilder(cfg=instantiate(build_cfg.val_dp))
+    test_dp = SpeechRecognitionDataPipeBuilder(cfg=instantiate(build_cfg.test_dp))
 
     return train_dp, val_dp, test_dp
 
 
 def construct_speaker_data_pipe_builders(cfg: DictConfig):
-    train_dp = SpeakerRecognitionDataPipeBuilder(
-        cfg=instantiate(cfg.data.pipe.train_dp)
-    )
-    val_dp = SpeakerRecognitionDataPipeBuilder(cfg=instantiate(cfg.data.pipe.val_dp))
-    test_dp = SpeakerRecognitionDataPipeBuilder(cfg=instantiate(cfg.data.pipe.test_dp))
+    build_cfg = cfg.data.pipe.speaker
+
+    train_dp = SpeakerRecognitionDataPipeBuilder(cfg=instantiate(build_cfg.train_dp))
+    val_dp = SpeakerRecognitionDataPipeBuilder(cfg=instantiate(build_cfg.val_dp))
+    test_dp = SpeakerRecognitionDataPipeBuilder(cfg=instantiate(build_cfg.test_dp))
 
     return train_dp, val_dp, test_dp
 
 
 def construct_mtl_data_pipe_builders(cfg: DictConfig):
+    build_cfg = cfg.data.pipe.mtl
+
     train_dp = SpeechAndSpeakerRecognitionDataPipeBuilder(
-        cfg=instantiate(cfg.data.pipe.train_dp)
+        cfg=instantiate(build_cfg.train_dp)
     )
     val_dp = SpeechAndSpeakerRecognitionDataPipeBuilder(
-        cfg=instantiate(cfg.data.pipe.val_dp)
+        cfg=instantiate(build_cfg.val_dp)
     )
     test_dp = SpeechAndSpeakerRecognitionDataPipeBuilder(
-        cfg=instantiate(cfg.data.pipe.test_dp)
+        cfg=instantiate(build_cfg.test_dp)
     )
 
     return train_dp, val_dp, test_dp
@@ -114,15 +121,37 @@ def construct_data_module(cfg: DictConfig):
             val_pipe_builder=val_dpb,
             test_pipe_builder=test_dpb,
         )
-    elif isinstance(dm_cfg, MTLDataModuleConfig):
+    elif isinstance(dm_cfg, JointMTLDataModuleConfig):
         train_dpb, val_dpb, test_dpb = construct_mtl_data_pipe_builders(cfg)
 
-        dm = MTLDataModule(
+        dm = JointMTLDataModule(
             dm_cfg,
             train_pipe_builder=train_dpb,
             val_pipe_builder=val_dpb,
             test_pipe_builder=test_dpb,
         )
+    elif isinstance(dm_cfg, DisjointMTLDataModuleConfig):
+        sv_train_dpb, sv_val_dpb, sv_test_dpb = construct_speaker_data_pipe_builders(
+            cfg
+        )
+        speaker_dm = SpeakerRecognitionDataModule(
+            dm_cfg.speaker_dm_cfg,
+            train_pipe_builder=sv_train_dpb,
+            val_pipe_builder=sv_val_dpb,
+            test_pipe_builder=sv_test_dpb,
+        )
+
+        asr_train_dpb, asr_val_dpb, asr_test_dpb = construct_speech_data_pipe_builders(
+            cfg
+        )
+        speech_dm = SpeechRecognitionDataModule(
+            dm_cfg.speech_dm_cfg,
+            train_pipe_builder=asr_train_dpb,
+            val_pipe_builder=asr_val_dpb,
+            test_pipe_builder=asr_test_dpb,
+        )
+
+        dm = DisjointMTLDataModule(speaker_dm=speaker_dm, speech_dm=speech_dm)
     else:
         raise ValueError(f"no suitable constructor for {dm_cfg}")
 
@@ -207,11 +236,11 @@ def construct_speech_recognition_module(
 
 def construct_mtl_module(
     cfg: DictConfig,
-    network_cfg: Union[Wav2vec2ForMTLConfig],
-    dm: MTLDataModule,
+    network_cfg: Union[Wav2vec2ForJointMTLConfig],
+    dm: JointMTLDataModule,
     loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
 ):
-    assert isinstance(dm, MTLDataModule)
+    assert isinstance(dm, JointMTLDataModule)
 
     # every speaker recognition network needs to be given these variables
     # for training purposes
@@ -221,8 +250,8 @@ def construct_mtl_module(
     test_names = dm.get_test_names()
 
     # get init function based on config type
-    if isinstance(network_cfg, Wav2vec2ForMTLConfig):
-        network_class = Wav2vec2ForMTL
+    if isinstance(network_cfg, Wav2vec2ForJointMTLConfig):
+        network_class = Wav2vec2ForJointMTL
     # elif isinstance(network_cfg, WavLMForSpeechRecognitionConfig):
     #     network_class = WavLMForSpeechRecognition
     else:
@@ -261,7 +290,9 @@ def init_model(cfg: DictConfig, network_class, kwargs: Dict):
 
 def construct_network_module(
     cfg: DictConfig,
-    dm: Union[SpeechRecognitionDataModule, SpeakerRecognitionDataModule, MTLDataModule],
+    dm: Union[
+        SpeechRecognitionDataModule, SpeakerRecognitionDataModule, JointMTLDataModule
+    ],
 ):
     # load loss function
     def loss_fn_constructor():
@@ -289,7 +320,7 @@ def construct_network_module(
         network = construct_speech_recognition_module(
             cfg, network_cfg, dm, loss_fn_constructor
         )
-    elif isinstance(network_cfg, Wav2vec2ForMTLConfig):
+    elif isinstance(network_cfg, Wav2vec2ForJointMTLConfig):
         network = construct_mtl_module(cfg, network_cfg, dm, loss_fn_constructor)
     else:
         raise ValueError(

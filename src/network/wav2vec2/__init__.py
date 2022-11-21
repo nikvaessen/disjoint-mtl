@@ -6,4 +6,5 @@ from .w2v2_speaker import (
     Wav2vec2ForSpeakerRecognitionConfig,
     Wav2vec2ForSpeakerRecognition,
 )
-from .w2v2_mtl import Wav2vec2ForMTLConfig, Wav2vec2ForMTL
+from .w2v2_mtl_joint import Wav2vec2ForJointMTLConfig, Wav2vec2ForJointMTL
+from .w2v2_mtl_disjoint import Wav2vec2ForDisjointMTLConfig, Wav2vec2ForDisjointMTL

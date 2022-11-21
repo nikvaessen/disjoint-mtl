@@ -1,4 +1,4 @@
-_target_: src.networks.wav2vec2.w2v2_speaker.Wav2vec2ForSpeakerRecognitionConfig
+_target_: src.network.wav2vec2.w2v2_speaker.Wav2vec2ForSpeakerRecognitionConfig
 
 # settings for wav2vec2 architecture
 huggingface_id: "facebook/wav2vec2-base"
@@ -15,7 +15,7 @@ use_gradient_checkpointing: true
 
 # head on top of wav2vec2 for speaker recognition
 head_cfg:
-  _target_: src.networks.heads.LinearProjectionHeadConfig
+  _target_: src.network.heads.LinearProjectionHeadConfig
   use_projection_layer: false
   projection_layer_dim: 128
   drop_prob: 0.05

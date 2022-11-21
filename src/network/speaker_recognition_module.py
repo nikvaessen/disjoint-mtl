@@ -24,7 +24,7 @@ from data_utility.eval.speaker.evaluator import (
     SpeakerTrial,
 )
 from data_utility.pipe.containers import SpeakerRecognitionBatch
-from src.networks.base_lightning_module import BaseLightningModule
+from src.network.base_lightning_module import BaseLightningModule
 
 ########################################################################################
 # Definition of speaker recognition API

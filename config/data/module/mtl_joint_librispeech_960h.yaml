@@ -1,4 +1,4 @@
-_target_: src.data.module.MTLDataModuleConfig
+_target_: src.data.module.JointMTLDataModuleConfig
 
 # name of dataset
 name: ls960h

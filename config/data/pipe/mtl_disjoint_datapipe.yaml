@@ -1,0 +1,127 @@
+speaker:
+  train_dp:
+    _target_: data_utility.pipe.builder.SpeakerRecognitionDataPipeBuilderConfig
+
+    # potential compression of shards
+    tar_read_mode: 'r'  # depends on compression or not
+
+    # parameters determining randomness
+    shuffle_buffer_before: 256
+    shuffle_buffer_after: 10
+    bucket_buffer: null
+
+    # chunk
+    chunk_strategy: random
+    chunk_size_sec: 3
+
+    # batching
+    batch_size: 32
+
+    # logic for giving each worker equal number of data
+    allow_partial_shards: true
+    num_workers: 5
+    drop_last: true
+
+  val_dp:
+    _target_: data_utility.pipe.builder.SpeakerRecognitionDataPipeBuilderConfig
+
+    # potential compression of shards
+    tar_read_mode: 'r'  # depends on compression or not
+
+    # parameters determining randomness
+    shuffle_buffer_before: 1
+    shuffle_buffer_after: 1
+    bucket_buffer: null
+
+    # chunk
+    chunk_strategy: start
+    chunk_size_sec: ${data.pipe.speaker.train_dp.chunk_size_sec}
+
+    # batching
+    batch_size: ${data.pipe.speaker.train_dp.batch_size}
+
+    # logic for giving each worker equal number of data
+    allow_partial_shards: true
+    num_workers: 1
+    drop_last: false
+
+  test_dp:
+    _target_: data_utility.pipe.builder.SpeakerRecognitionDataPipeBuilderConfig
+
+    # potential compression of shards
+    tar_read_mode: 'r'  # depends on compression or not
+
+    # parameters determining randomness
+    shuffle_buffer_before: 1
+    shuffle_buffer_after: 1
+    bucket_buffer: null
+
+    # chunk
+    chunk_strategy: none
+    chunk_size_sec: null
+
+    # batching
+    batch_size: 1
+
+    # logic for giving each worker equal number of data
+    allow_partial_shards: true
+    num_workers: 1
+    drop_last: false
+
+speech:
+  train_dp:
+    _target_: data_utility.pipe.builder.SpeechRecognitionDataPipeBuilderConfig
+
+    # potential compression of shards
+    tar_read_mode: 'r'  # depends on compression or not
+
+    # parameters determining randomness
+    shuffle_buffer_before: 500
+    shuffle_buffer_after: 10
+    bucket_buffer: 15
+
+    # batching
+    max_tokens: 3_200_000
+    max_len: 320_000
+
+    # logic for giving each worker equal number of data
+    allow_partial_shards: true
+    num_workers: 5
+
+  val_dp:
+    _target_: data_utility.pipe.builder.SpeechRecognitionDataPipeBuilderConfig
+
+    # potential compression of shards
+    tar_read_mode: 'r'  # depends on compression or not
+
+    # parameters determining randomness
+    shuffle_buffer_before: 500
+    shuffle_buffer_after: 10
+    bucket_buffer: 15
+
+    # batching
+    batch_size: 8
+    drop_last: false
+
+    # logic for giving each worker equal number of data
+    allow_partial_shards: true
+    num_workers: 1
+
+  test_dp:
+    _target_: data_utility.pipe.builder.SpeechRecognitionDataPipeBuilderConfig
+
+    # potential compression of shards
+    tar_read_mode: 'r'  # depends on compression or not
+
+    # parameters determining randomness
+    shuffle_buffer_before: 500
+    shuffle_buffer_after: 10
+    bucket_buffer: 15
+
+    # batching
+    batch_size: 1
+    drop_last: false
+
+    # logic for giving each worker equal number of data
+    allow_partial_shards: true
+    num_workers: 1
