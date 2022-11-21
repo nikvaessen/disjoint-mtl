@@ -6,11 +6,13 @@
 ########################################################################################
 
 from dataclasses import dataclass
-from typing import Callable, List, Optional, Dict, Tuple
+from itertools import chain
+from typing import Callable, List, Optional, Dict, Tuple, Iterator
 
 import torch as t
 
 from omegaconf import DictConfig
+from torch.nn import Parameter
 from transformers import Wav2Vec2Model
 
 from data_utility.eval.speaker.evaluator import SpeakerTrial
@@ -37,6 +39,10 @@ class Wav2vec2ForDisjointMTLConfig:
     # if enabled, gradient checkpointing slows down iteration speed but saves memory
     use_gradient_checkpointing: bool
 
+    # opt settings (conflict-adverse grad descent)
+    apply_ca_grad: bool
+    ca_grad_c: 0.5
+
     # freeze logic
     freeze_cnn: bool
     freeze_transformer: bool  # this also freezes projector and rel. pos. emb
@@ -59,17 +65,25 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
         loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
         idx_to_char: Dict[int, str],
         num_speakers: int,
+        val_names: List[str],
+        val_modes: List[str],
         test_pairs: List[List[SpeakerTrial]],
         test_names: List[str],
+        test_modes: List[str],
         cfg: Wav2vec2ForDisjointMTLConfig,
     ):
         super().__init__(
             hyperparameter_config=root_hydra_config,
             loss_fn_constructor=loss_fn_constructor,
-            idx_to_char=idx_to_char,
-            test_names=test_names,
             num_speakers=num_speakers,
+            idx_to_char=idx_to_char,
+            val_names=val_names,
+            val_modes=val_modes,
+            test_names=test_names,
             test_pairs=test_pairs,
+            test_modes=test_modes,
+            apply_ca_grad=cfg.apply_ca_grad,
+            ca_grad_c=cfg.ca_grad_c,
         )
 
         self.cfg = cfg
@@ -134,6 +148,9 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
         sequence_lengths = self._compute_feature_extractor_lengths(lengths)
 
         return sequence_output, sequence_lengths
+
+    def shared_params(self) -> Iterator[Tuple[str, Parameter]]:
+        return self.wav2vec2.named_parameters()
 
     def _construct_attention_mask(self, num_audio_samples: List[int], device: str):
         assert len(num_audio_samples) >= 1

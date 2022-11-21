@@ -56,6 +56,12 @@ class DisjointMTLDataModule(LightningDataModule):
     def get_num_train_speakers(self) -> int:
         return self.speaker_dm.get_num_train_speakers()
 
+    def get_val_names(self):
+        return ["val_speech", "val_speaker"]
+
+    def get_val_modes(self):
+        return ["speech", "speaker"]
+
     def get_test_speaker_eval_list(self) -> List[List[SpeakerTrial]]:
         return [
             [] for _ in self.speech_dm.get_test_names()
@@ -63,6 +69,11 @@ class DisjointMTLDataModule(LightningDataModule):
 
     def get_test_names(self):
         return self.speech_dm.get_test_names() + self.speaker_dm.get_test_names()
+
+    def get_test_modes(self):
+        return ["speech" for _ in self.speech_dm.get_test_names()] + [
+            "speaker" for _ in self.speaker_dm.get_test_names()
+        ]
 
     def prepare_data(self) -> None:
         self.speaker_dm.prepare_data()
@@ -95,6 +106,8 @@ class DisjointMTLDataModule(LightningDataModule):
             to_return.extend(val_speaker_dl)
         else:
             to_return.append(val_speaker_dl)
+
+        assert len(to_return) == 2
 
         return to_return
 

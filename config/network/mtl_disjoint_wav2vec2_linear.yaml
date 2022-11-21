@@ -13,6 +13,10 @@ num_steps_freeze_transformer: 10_000
 # if enabled, gradient checkpointing slows down iteration speed but saves memory
 use_gradient_checkpointing: true
 
+# opt settings (conflict-adverse grad descent)
+apply_ca_grad: false
+ca_grad_c: 0.5
+
 # head on top of wav2vec2 for speaker recognition
 speaker_head_cfg:
   _target_: src.network.heads.LinearProjectionHeadConfig

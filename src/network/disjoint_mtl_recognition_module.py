@@ -10,8 +10,10 @@ import logging
 import pathlib
 
 from abc import abstractmethod
-from typing import Callable, Optional, List, Dict, Tuple, Any, Union
+from collections import defaultdict
+from typing import Callable, Optional, List, Dict, Tuple, Any, Union, Iterator
 
+import math
 import torch.nn
 import torchmetrics
 
@@ -19,6 +21,8 @@ import torch as t
 
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig
+from scipy.optimize import minimize_scalar
+from torch.nn import Parameter
 
 from data_utility.eval.speaker.cosine_dist_evaluator import CosineDistanceEvaluator
 from data_utility.eval.speaker.evaluator import SpeakerTrial
@@ -42,15 +46,57 @@ from src.optim.loss.mt_speech_speaker_loss import MTSpeechAndSpeakerLoss
 log = logging.getLogger(__name__)
 
 
+def avg_grad(g1: t.Tensor, g2: t.Tensor):
+    with torch.no_grad():
+        return (g1 + g2) / 2
+
+
+def ca_grad(g1: t.Tensor, g2: t.Tensor, c: t.Tensor):
+    with torch.no_grad():
+        g0 = (g1 + g2) / 2
+        g0_norm = torch.linalg.norm(g0)
+        phi = c**2 * g0_norm**2
+        phi_sqrt = torch.sqrt(phi)
+
+        def min_fn(w):
+            w1 = w
+            w2 = 1 - w
+
+            gw_temp = (w1 * g1) + (w2 * g2) / 2
+            gw_norm_temp = torch.linalg.norm(gw_temp)
+
+            gwg0 = torch.dot(gw_temp, g0)
+
+            objective = gwg0 + (phi_sqrt * gw_norm_temp)
+
+            return objective.cpu().detach().item()
+
+        res = minimize_scalar(min_fn, bounds=(0, 1), method="bounded")
+        opt_w1 = res.x
+        opt_w2 = 1 - opt_w1
+
+        gw = (opt_w1 * g1) + (opt_w2 * g2)
+        gw_norm = torch.linalg.norm(gw)
+        coef = phi_sqrt / gw_norm
+        g = g0 + (coef * gw)
+
+        return g
+
+
 class DisjointMTLLightningModule(BaseLightningModule):
     def __init__(
         self,
         hyperparameter_config: DictConfig,
         loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
         idx_to_char: Dict[int, str],
+        val_names: List[str],
+        val_modes: List[str],
         test_names: List[str],
+        test_modes: List[str],
         num_speakers: int,
         test_pairs: List[List[SpeakerTrial]],
+        apply_ca_grad: bool,
+        ca_grad_c: float,
     ):
         super().__init__(hyperparameter_config, loss_fn_constructor)
 
@@ -61,10 +107,21 @@ class DisjointMTLLightningModule(BaseLightningModule):
 
         # input arguments
         self.idx_to_char = idx_to_char
-        self.test_names = test_names
         self.vocab_size = len(idx_to_char)
         self.num_speakers = num_speakers
+
+        self.val_names = val_names
+        self.val_modes = val_modes
+        assert len(val_names) == len(val_modes) == 2
+
+        self.test_names = test_names
+        self.test_modes = test_modes
         self.test_pairs = test_pairs
+        assert len(test_names) == len(test_modes) == len(test_pairs)
+
+        # opt settings
+        self.apply_ca_grad = apply_ca_grad
+        self.ca_grad_c = t.tensor(ca_grad_c)
 
         # evaluator
         self.evaluator = CosineDistanceEvaluator(
@@ -76,6 +133,7 @@ class DisjointMTLLightningModule(BaseLightningModule):
         self.metric_train_loss = torchmetrics.MeanMetric()
         self.metric_train_speech_loss = torchmetrics.MeanMetric()
         self.metric_train_speaker_loss = torchmetrics.MeanMetric()
+        self.train_grad_dict = defaultdict(list)
 
         self.metric_train_acc = torchmetrics.Accuracy()
         self.metric_train_wer = torchmetrics.MeanMetric()
@@ -128,6 +186,10 @@ class DisjointMTLLightningModule(BaseLightningModule):
         # into an embedding of shape [BATCH_SIZE, EMBEDDING_SIZE]
         pass
 
+    @abstractmethod
+    def shared_params(self) -> Iterator[Tuple[str, Parameter]]:
+        return self.named_parameters()
+
     def forward(self, input_tensor: torch.Tensor, lengths: List[int]):
         sequence, sequence_lengths = self.compute_embedding_sequence(
             input_tensor, lengths
@@ -146,6 +208,42 @@ class DisjointMTLLightningModule(BaseLightningModule):
             (speaker_embedding, speaker_prediction),
         )
 
+    def grad2vec(self, apply_zero_grad: bool = True):
+        with torch.no_grad():
+            # extract all gradients from shared parameters and put them into a single vector
+            reconstruction_dict = {}
+            stack = []
+            start_idx = 0
+
+            for name, param in self.shared_params():
+                if param.requires_grad and param.grad is not None:
+                    reconstruction_dict[name] = start_idx
+                    flat_grad = param.grad.flatten()
+                    stack.append(flat_grad)
+                    start_idx += flat_grad.shape[0]
+
+                    if apply_zero_grad:
+                        param.grad = None
+
+            if len(stack) == 0:  # network is frozen
+                return None, None
+            else:
+                grad_vec = torch.concat(stack)
+
+                return grad_vec, reconstruction_dict
+
+    def vec2grad(self, vec: torch.Tensor, reconstruction_dict: Dict[str, int]):
+        with torch.no_grad():
+            # put the single grad vector back into the grad of all shared parameters
+            for name, param in self.shared_params():
+                if name in reconstruction_dict:
+                    num_params = math.prod(param.shape)
+                    begin_idx = reconstruction_dict[name]
+                    end_idx = begin_idx + num_params
+
+                    flattened_vec = vec[begin_idx:end_idx]
+                    param.grad = flattened_vec.unflatten(-1, param.shape)
+
     def training_step(
         self,
         batch: Tuple[SpeechRecognitionBatch, SpeakerRecognitionBatch],
@@ -156,32 +254,73 @@ class DisjointMTLLightningModule(BaseLightningModule):
         assert isinstance(asr_batch, SpeechRecognitionBatch)
         assert isinstance(sv_batch, SpeakerRecognitionBatch)
 
-        print(asr_batch)
-        print(sv_batch)
-
-        # forward and backward step for task 1 (asr)
+        # forward step for task 1 (asr)
         (_, (asr_prediction, asr_pred_lengths), _) = self.forward(
             asr_batch.audio_tensor, asr_batch.audio_num_frames
         )
+        loss_speech = self.loss_fn.speech_loss(
+            predictions=asr_prediction,
+            ground_truths=asr_batch.transcriptions_tensor,
+            prediction_lengths=asr_pred_lengths,
+            ground_truth_lengths=asr_batch.transcriptions_length,
+        )
 
-        # save gradients for task 1
+        # forward step for task 2 (sv)
+        (_, _, (sv_embedding, sv_logits)) = self.forward(
+            sv_batch.audio_tensor, sv_batch.audio_num_frames
+        )
+        loss_speaker, sv_prediction = self.loss_fn.speaker_loss(
+            sv_logits, sv_batch.id_tensor
+        )
 
-        # forward and backward step for task 2 (sv)
+        # combine gradients for task 1 and 2
+        self.manual_backward(loss_speech)
+        g1, g1_dict = self.grad2vec()
+        self.manual_backward(loss_speaker)
+        g2, g2_dict = self.grad2vec()
 
-        # save gradients for task 2
+        if g1 is not None and g2 is not None:
+            # network is not frozen
+            if self.apply_ca_grad:
+                g0 = ca_grad(g1, g2, self.ca_grad_c)
+            else:
+                g0 = avg_grad(g1, g2)
 
-        # combine gradients for task 1 and 2, and set grad values
+            self.vec2grad(g0, g1_dict)
+        else:
+            g0 = None
 
         # step weights
+        opt = self.optimizers()
+        lr_schedule = self.lr_schedulers()
 
-    def _log_train_batch_info(self, batch):
-        with (pathlib.Path.cwd() / "train_batch_info.log").open("a") as f:
-            print(
-                f"{batch.batch_size=} "
-                f"{batch.audio_tensor.shape=} "
-                f"{batch.id_tensor.shape=}",
-                file=f,
+        opt.step()
+        lr_schedule.step()
+        self.zero_grad()
+
+        # log values
+        with torch.no_grad():
+            predicted_transcriptions = decode_predictions_greedy(
+                predictions=asr_prediction,
+                until_seq_idx=asr_pred_lengths,
+                idx_to_char=self.idx_to_char,
             )
+            label_transcriptions = asr_batch.transcriptions
+            train_wer = calculate_wer(predicted_transcriptions, label_transcriptions)
+
+            self._log_train_acc(sv_prediction, sv_batch.id_tensor, batch_idx)
+            self._log_train_predictions(
+                asr_batch,
+                batch_idx,
+                predicted_transcriptions,
+                label_transcriptions,
+                train_wer,
+            )
+            self._log_train_wer(train_wer, batch_idx)
+            self._log_train_loss(
+                (loss_speaker + loss_speech) / 2, loss_speaker, loss_speech, batch_idx
+            )
+            self._log_train_gradients(batch_idx, g0, g1, g2)
 
     def _log_train_acc(self, prediction: t.Tensor, label: t.Tensor, batch_idx: int):
         self.metric_train_acc(prediction, label)
@@ -259,77 +398,97 @@ class DisjointMTLLightningModule(BaseLightningModule):
             self.metric_train_speaker_loss.reset()
             self.metric_train_speech_loss.reset()
 
+    def _log_train_gradients(
+        self, batch_idx: int, g0: t.Tensor, g1: t.Tensor, g2: t.Tensor
+    ):
+        if g0 is None and g1 is None and g2 is None:
+            return
+
+        g0g1 = torch.dot(g0, g1)
+        g0g2 = torch.dot(g0, g2)
+        g1g1 = torch.dot(g1, g2)
+
+        self.train_grad_dict["g0g1"].append(g0g1)
+        self.train_grad_dict["g0g2"].append(g0g2)
+        self.train_grad_dict["g1g2"].append(g1g1)
+
+        if batch_idx % 100 == 0:
+            for key in ["g0g1", "g0g2", "g1g2"]:
+                value_list = self.train_grad_dict[key]
+                self.train_grad_dict[key] = []
+
+                value_tensor = t.tensor(value_list)
+
+                self.log(f"{key}_min", t.min(value_tensor))
+                self.log(f"{key}_max", t.max(value_tensor))
+                self.log(f"{key}_avg", t.mean(value_tensor))
+                self.log(f"{key}_pos_count", t.sum(value_tensor > 0))
+
     def validation_step(
         self,
         batch: Union[SpeechRecognitionBatch, SpeakerRecognitionBatch],
         batch_idx: int,
         dataloader_idx: Optional[int] = None,
     ) -> Optional[STEP_OUTPUT]:
-        assert isinstance(batch, SpeechRecognitionBatch) or isinstance(
-            batch, SpeakerRecognitionBatch
-        )
+        mode = self.val_modes[dataloader_idx]
 
         (
             _,
             (asr_prediction, asr_pred_lengths),
-            (speaker_embedding, speaker_logits),
+            (speaker_embedding, speaker_prediction),
         ) = self.forward(batch.audio_tensor, batch.audio_num_frames)
 
-        (
-            summed_loss,
-            speech_loss_value,
-            speaker_loss_value,
-            speaker_prediction,
-            speech_weight,
-            speaker_weight,
-        ) = self.loss_fn(
-            speech_predictions=asr_prediction,
-            speech_prediction_lengths=asr_pred_lengths,
-            speech_ground_truths=batch.transcriptions_tensor,
-            speech_ground_truth_lengths=batch.transcriptions_length,
-            speaker_logits=speaker_logits,
-            speaker_labels=batch.id_tensor,
-        )
+        if mode == "speaker":
+            assert isinstance(batch, SpeakerRecognitionBatch)
 
-        with torch.no_grad():
+            loss_speaker, sv_prediction = self.loss_fn.speaker_loss(
+                speaker_prediction, batch.id_tensor
+            )
+
+            self.metric_val_acc(sv_prediction, batch.id_tensor)
+            self.metric_val_speaker_loss(loss_speaker)
+
+            return {}
+
+        elif mode == "speech":
+            assert isinstance(batch, SpeechRecognitionBatch)
+
+            loss_speech = self.loss_fn.speech_loss(
+                predictions=asr_prediction,
+                ground_truths=batch.transcriptions_tensor,
+                prediction_lengths=asr_pred_lengths,
+                ground_truth_lengths=batch.transcriptions_length,
+            )
+
+            self.metric_val_speech_loss(loss_speech)
+
             predicted_transcriptions = decode_predictions_greedy(
                 predictions=asr_prediction,
                 until_seq_idx=asr_pred_lengths,
                 idx_to_char=self.idx_to_char,
             )
-            label_transcriptions = batch.transcriptions
 
-            val_wer = calculate_wer(predicted_transcriptions, label_transcriptions)
+            return {
+                "transcription": predicted_transcriptions,
+                "ground_truth": batch.transcriptions,
+            }
 
-            # speech
-            self._log_val_predictions(
-                batch,
-                batch_idx,
-                predicted_transcriptions,
-                label_transcriptions,
-                val_wer,
-            )
-            self._log_val_batch_info(batch)
-
-            # values
-            self.metric_val_acc(speaker_prediction, batch.id_tensor)
-            self.metric_val_loss(summed_loss)
-            self.metric_val_speaker_loss(speaker_loss_value)
-            self.metric_val_speech_loss(speech_loss_value)
-
-        return {
-            "transcription": predicted_transcriptions,
-            "ground_truth": label_transcriptions,
-        }
+        else:
+            raise ValueError(f"unknown validation mode `{mode}`")
 
     def validation_epoch_end(self, outputs: List[Any]) -> None:
-        val_wer = self.calculate_wer_on_collected_output(outputs)
+        wer_idx = 0 if self.val_modes[0] == "speech" else 1
+        val_wer = self.calculate_wer_on_collected_output(outputs[wer_idx])
+
+        val_speaker_loss = self.metric_val_speaker_loss.compute()
+        val_speech_loss = self.metric_val_speech_loss.compute()
+        val_loss = val_speech_loss + val_speaker_loss
 
         self.log_dict(
             {
-                "val_loss": self.metric_val_loss.compute(),
-                "val_speaker_loss": self.metric_val_speaker_loss.compute(),
-                "val_speech_loss": self.metric_val_speech_loss.compute(),
+                "val_loss": val_loss,
+                "val_speaker_loss": val_speaker_loss,
+                "val_speech_loss": val_speech_loss,
                 "val_wer": val_wer,
                 "val_acc": self.metric_val_acc.compute(),
             },
@@ -342,80 +501,44 @@ class DisjointMTLLightningModule(BaseLightningModule):
         self.metric_val_speech_loss.reset()
         self.metric_val_acc.reset()
 
-    def _log_val_batch_info(self, batch):
-        with (pathlib.Path.cwd() / "val_batch_info.log").open("a") as f:
-            print(
-                f"{batch.batch_size=} "
-                f"{batch.audio_tensor.shape=} "
-                f"{batch.id_tensor.shape=}",
-                file=f,
-            )
-
-    def _log_val_predictions(
-        self,
-        batch,
-        batch_idx,
-        predicted_transcriptions,
-        label_transcriptions,
-        train_wer,
-    ):
-        if batch_idx == 0:
-            with (pathlib.Path.cwd() / "val_predictions.log").open("a") as f:
-                for idx, (pred, gt) in enumerate(
-                    zip(predicted_transcriptions, label_transcriptions)
-                ):
-                    print(f"{idx:>3d}: {batch.keys[idx]}", file=f)
-                    print(f"{idx:>3d}: prediction=`{pred}`", file=f)
-                    print(f"{idx:>3d}:      label=`{gt}`", file=f)
-                print(
-                    f"{train_wer=}\n",
-                    end="\n\n",
-                    file=f,
-                    flush=True,
-                )
-
     def test_step(
         self,
         batch: Union[SpeechRecognitionBatch, SpeakerRecognitionBatch],
         batch_idx: int,
         dataloader_idx: Optional[int] = None,
     ) -> Optional[STEP_OUTPUT]:
-        assert isinstance(batch, SpeechRecognitionBatch) or isinstance(
-            batch, SpeakerRecognitionBatch
-        )
+        mode = self.test_modes[dataloader_idx]
 
         (
             _,
             (asr_prediction, asr_pred_lengths),
-            (speaker_embedding, speaker_logits),
+            (speaker_embedding, speaker_prediction),
         ) = self.forward(batch.audio_tensor, batch.audio_num_frames)
 
-        with torch.no_grad():
+        if mode == "speaker":
+            assert isinstance(batch, SpeakerRecognitionBatch)
+
+            return {
+                "embedding": speaker_embedding.detach().cpu(),
+                "sample_id": batch.keys,
+            }
+
+        elif mode == "speech":
+            assert isinstance(batch, SpeechRecognitionBatch)
+
             predicted_transcriptions = decode_predictions_greedy(
                 predictions=asr_prediction,
                 until_seq_idx=asr_pred_lengths,
                 idx_to_char=self.idx_to_char,
             )
-            label_transcriptions = batch.transcriptions
 
-        if (
-            len(speaker_embedding.shape) == 1
-            and speaker_embedding.shape[0] == self.speaker_embedding_size
-        ):
-            speaker_embedding = speaker_embedding[None, :]
+            return {
+                "transcription": predicted_transcriptions,
+                "ground_truth": batch.transcriptions,
+            }
 
-        assert len(speaker_embedding.shape) == 2
-        assert speaker_embedding.shape[0] == batch.batch_size
-        assert speaker_embedding.shape[1] == self.speaker_embedding_size
-
-        speaker_embedding = t.stack([speaker_embedding.detach().to("cpu")])
-
-        return {
-            "transcription": predicted_transcriptions,
-            "ground_truth": label_transcriptions,
-            "embedding": speaker_embedding,
-            "sample_id": batch.keys,
-        }
+        else:
+            raise ValueError(f"unknown validation mode `{mode}`")
 
     def test_epoch_end(self, outputs: List[Dict]) -> None:
         if len(self.test_names) == 1:
@@ -425,15 +548,21 @@ class DisjointMTLLightningModule(BaseLightningModule):
 
         for idx in range(len(outputs)):
             key = self.test_names[idx]
+            mode = self.test_modes[idx]
 
-            wer = self.calculate_wer_on_collected_output(outputs[idx])
-            results = evaluate_embeddings(
-                self.evaluator, outputs[idx], self.test_pairs[idx], True
-            )
+            if mode == "speaker":
+                results = evaluate_embeddings(
+                    self.evaluator, outputs[idx], self.test_pairs[idx], True
+                )
+                result_dict[f"test_eer_{key}"] = results["eer"]
+                result_dict[f"test_eer_threshold_{key}"] = results["eer_threshold"]
 
-            result_dict[f"test_wer_{key}"] = wer
-            result_dict[f"test_eer_{key}"] = results["eer"]
-            result_dict[f"test_eer_threshold_{key}"] = results["eer_threshold"]
+            elif mode == "speech":
+                wer = self.calculate_wer_on_collected_output(outputs[idx])
+                result_dict[f"test_wer_{key}"] = wer
+
+            else:
+                raise ValueError(f"unknown test mode {mode}")
 
         self.log_dict(result_dict)
 

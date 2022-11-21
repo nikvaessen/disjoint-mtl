@@ -254,21 +254,33 @@ def construct_mtl_module(
     # get init function based on config type
     if isinstance(network_cfg, Wav2vec2ForJointMTLConfig):
         network_class = Wav2vec2ForJointMTL
+        kwargs = {
+            "root_hydra_config": cfg,
+            "cfg": network_cfg,
+            "loss_fn_constructor": loss_fn_constructor,
+            "idx_to_char": idx_to_char,
+            "num_speakers": num_speakers,
+            "test_names": test_names,
+            "test_pairs": test_pairs,
+        }
+
     elif isinstance(network_cfg, Wav2vec2ForDisjointMTLConfig):
         network_class = Wav2vec2ForDisjointMTL
+        kwargs = {
+            "root_hydra_config": cfg,
+            "cfg": network_cfg,
+            "loss_fn_constructor": loss_fn_constructor,
+            "idx_to_char": idx_to_char,
+            "num_speakers": num_speakers,
+            "val_names": dm.get_val_names(),
+            "val_modes": dm.get_val_modes(),
+            "test_names": test_names,
+            "test_modes": dm.get_test_modes(),
+            "test_pairs": test_pairs,
+        }
+
     else:
         raise ValueError(f"cannot load network from {network_cfg}")
-
-    # init model
-    kwargs = {
-        "root_hydra_config": cfg,
-        "loss_fn_constructor": loss_fn_constructor,
-        "idx_to_char": idx_to_char,
-        "test_names": test_names,
-        "num_speakers": num_speakers,
-        "test_pairs": test_pairs,
-        "cfg": network_cfg,
-    }
 
     return init_model(cfg, network_class, kwargs)
 
