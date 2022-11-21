@@ -42,7 +42,8 @@ test_shards:
 
 # path to each trial list matching the test set
 test_trials:
-  - ${oc.env:VOXCELEB_DIR}/meta/trials_dev.txt
   - ${oc.env:LIBRISPEECH_DIR}/meta/trials_dev_clean.txt
   - ${oc.env:LIBRISPEECH_DIR}/meta/trials_dev_other.txt
+  - ${oc.env:LIBRISPEECH_DIR}/meta/trials_test_clean.txt
+  - ${oc.env:LIBRISPEECH_DIR}/meta/trials_test_other.txt
   - ${oc.env:SWITCHBOARD_DIR}/meta/trials_eval.txt
