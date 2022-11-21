@@ -396,12 +396,6 @@ def run_train_eval_script(cfg: DictConfig):
     # construct data module
     dm = construct_data_module(cfg)
 
-    for x in dm.train_dataloader():
-        print(x)
-        break
-
-    exit()
-
     # create callbacks
     callbacks = construct_callbacks(cfg)
 
