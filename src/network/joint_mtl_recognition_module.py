@@ -26,7 +26,6 @@ from data_utility.eval.speech.transform import (
     decode_predictions_greedy,
 )
 from data_utility.pipe.containers import (
-    SpeechRecognitionBatch,
     SpeechAndSpeakerRecognitionBatch,
 )
 from src.network.base_lightning_module import BaseLightningModule

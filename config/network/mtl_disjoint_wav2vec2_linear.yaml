@@ -1,4 +1,4 @@
-_target_: src.network.wav2vec2.w2v2_mtl.Wav2vec2ForDisjointMTLConfig
+_target_: src.network.wav2vec2.Wav2vec2ForDisjointMTLConfig
 
 # settings for wav2vec2 architecture
 huggingface_id: "facebook/wav2vec2-base"

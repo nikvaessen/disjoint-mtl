@@ -50,6 +50,9 @@ class DisjointMTLDataModule(LightningDataModule):
         self.speaker_dm = speaker_dm
         self.speech_dm = speech_dm
 
+    def get_idx_to_char(self):
+        return self.speech_dm.get_idx_to_char()
+
     def get_num_train_speakers(self) -> int:
         return self.speaker_dm.get_num_train_speakers()
 
@@ -71,20 +74,29 @@ class DisjointMTLDataModule(LightningDataModule):
 
         # train dp
         self.train_dp = Zipper(
-            Cycler(self.speaker_dm.train_dp), Cycler(self.speech_dm.train_dp)
+            Cycler(self.speech_dm.train_dp), Cycler(self.speaker_dm.train_dp)
         )
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         return self.speech_dm.train_pipe_builder.wrap_pipe(self.train_dp)
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
+        to_return = []
+
         val_speech_dl = self.speech_dm.val_dataloader()
         val_speaker_dl = self.speaker_dm.val_dataloader()
 
-        if isinstance(val_speech_dl, list) or not isinstance(val_speaker_dl, list):
-            raise ValueError("val dataloaders should not be list")
+        if isinstance(val_speech_dl, list):
+            to_return.extend(val_speech_dl)
+        else:
+            to_return.append(val_speech_dl)
 
-        return [val_speech_dl, val_speaker_dl]
+        if isinstance(val_speaker_dl, list):
+            to_return.extend(val_speaker_dl)
+        else:
+            to_return.append(val_speaker_dl)
+
+        return to_return
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
         test_speech_dl = self.speech_dm.test_dataloader()

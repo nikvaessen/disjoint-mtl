@@ -1,4 +1,4 @@
-_target_: src.data.module.DisjointedMTLDataModuleConfig
+_target_: src.data.module.DisjointMTLDataModuleConfig
 
 speech_dm_cfg:
   _target_: src.data.module.SpeechRecognitionDataModuleConfig

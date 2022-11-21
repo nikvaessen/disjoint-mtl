@@ -1,0 +1,58 @@
+defaults:
+  - _self_
+  - callbacks: mt_default
+  - data/module: mtl_joint_librispeech_960h
+  - data/pipe: mtl_joint_datapipe
+  - network: mtl_joint_wav2vec2_linear
+  - optim/algo: adam
+  - optim/schedule: tri_stage
+  - optim/loss: mt_speech_speaker_loss
+  - trainer: trainer_gpu
+
+# root directory with subfolders containing the canonical dataset(s)
+data_folder: ${oc.env:DATA_FOLDER}
+
+# directory for slurm and hydra logs
+log_folder: ${oc.env:LOG_FOLDER}
+
+# random seed used by the experiment
+seed: 42133724
+
+# whether to fit model
+fit_model: True
+
+# whether to evaluate model
+eval_model: True
+
+# whether to load the weight of the networks from a checkpoint
+load_network_from_checkpoint: null
+
+# whether to log to wandb
+use_wandb: ${oc.decode:${oc.env:USE_WANDB}}
+
+# number of gpus to use
+gpus: ${oc.decode:${oc.env:NUM_GPUS}}
+
+# project name (useful for giving a name to log directories)
+project_name: disjoint-mtl-joined
+
+# experiment name
+# (:) indicates it needs to be resolved
+experiment_name: ${random_name:}
+
+# tag to add to the experiment dashboard for easy filtering
+# of certain experiment
+date_tag: ${now:%Y-%m-%d}
+tag: null
+
+# config variables for hydra
+hydra:
+  run:
+    # set root output directory
+    dir: ${log_folder}/disjoint-mtl/run/${now:%Y-%m-%d_%H-%M-%S}/${experiment_name}
+  sweep:
+    # set root output directory
+    dir: ${log_folder}/disjoint-mtl/sweep/${now:%Y-%m-%d_%H-%M-%S}
+    subdir: ${experiment_name}
+  job:
+    chdir: true

@@ -14,13 +14,13 @@ from omegaconf import DictConfig
 from transformers import Wav2Vec2Model
 
 from data_utility.eval.speaker.evaluator import SpeakerTrial
-from src.networks.heads import (
+from src.network.disjoint_mtl_recognition_module import DisjointMTLLightningModule
+from src.network.heads import (
     SpeechHeadConfig,
     construct_speech_head,
     construct_speaker_head,
     SpeakerHeadConfig,
 )
-from src.networks.joint_mtl_recognition_module import JointMTLLightningModule
 from src.util.freeze import FreezeManager
 
 
@@ -52,7 +52,7 @@ class Wav2vec2ForDisjointMTLConfig:
 # complete network
 
 
-class Wav2vec2ForDisjointMTL(JointMTLLightningModule):
+class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
     def __init__(
         self,
         root_hydra_config: DictConfig,

@@ -1,6 +1,7 @@
 ########################################################################################
 #
-# Define a base lightning module for a MTL speech and speaker recognition network.
+# Define a base lightning module for a MTL speech and speaker recognition network
+# with disjoint training.
 #
 # Author(s): Nik Vaessen
 ########################################################################################
@@ -9,7 +10,7 @@ import logging
 import pathlib
 
 from abc import abstractmethod
-from typing import Callable, Optional, List, Dict, Tuple, Any
+from typing import Callable, Optional, List, Dict, Tuple, Any, Union
 
 import torch.nn
 import torchmetrics
@@ -27,10 +28,10 @@ from data_utility.eval.speech.transform import (
 )
 from data_utility.pipe.containers import (
     SpeechRecognitionBatch,
-    SpeechAndSpeakerRecognitionBatch,
+    SpeakerRecognitionBatch,
 )
-from src.networks.base_lightning_module import BaseLightningModule
-from src.networks.speaker_recognition_module import evaluate_embeddings
+from src.network.base_lightning_module import BaseLightningModule
+from src.network.speaker_recognition_module import evaluate_embeddings
 from src.optim.loss.mt_speech_speaker_loss import MTSpeechAndSpeakerLoss
 
 ########################################################################################
@@ -41,7 +42,7 @@ from src.optim.loss.mt_speech_speaker_loss import MTSpeechAndSpeakerLoss
 log = logging.getLogger(__name__)
 
 
-class DisjoinedMTLLightningModule(BaseLightningModule):
+class DisjointMTLLightningModule(BaseLightningModule):
     def __init__(
         self,
         hyperparameter_config: DictConfig,
@@ -84,6 +85,8 @@ class DisjoinedMTLLightningModule(BaseLightningModule):
         self.metric_val_speaker_loss = torchmetrics.MeanMetric()
 
         self.metric_val_acc = torchmetrics.Accuracy()
+
+        self.automatic_optimization = False
 
     @abstractmethod
     def compute_embedding_sequence(
@@ -145,64 +148,31 @@ class DisjoinedMTLLightningModule(BaseLightningModule):
 
     def training_step(
         self,
-        batch: SpeechAndSpeakerRecognitionBatch,
+        batch: Tuple[SpeechRecognitionBatch, SpeakerRecognitionBatch],
         batch_idx: int,
         optimized_idx: Optional[int] = None,
-    ) -> STEP_OUTPUT:
-        assert isinstance(batch, SpeechAndSpeakerRecognitionBatch)
-        (
-            _,
-            (asr_prediction, asr_pred_lengths),
-            (speaker_embedding, speaker_logits),
-        ) = self.forward(batch.audio_tensor, batch.audio_num_frames)
+    ):
+        asr_batch, sv_batch = batch
+        assert isinstance(asr_batch, SpeechRecognitionBatch)
+        assert isinstance(sv_batch, SpeakerRecognitionBatch)
 
-        (
-            summed_loss,
-            speech_loss_value,
-            speaker_loss_value,
-            speaker_prediction,
-            speech_weight,
-            speaker_weight,
-        ) = self.loss_fn(
-            speech_predictions=asr_prediction,
-            speech_prediction_lengths=asr_pred_lengths,
-            speech_ground_truths=batch.transcriptions_tensor,
-            speech_ground_truth_lengths=batch.transcriptions_length,
-            speaker_logits=speaker_logits,
-            speaker_labels=batch.id_tensor,
+        print(asr_batch)
+        print(sv_batch)
+
+        # forward and backward step for task 1 (asr)
+        (_, (asr_prediction, asr_pred_lengths), _) = self.forward(
+            asr_batch.audio_tensor, asr_batch.audio_num_frames
         )
 
-        # make logs
-        with torch.no_grad():
-            predicted_transcriptions = decode_predictions_greedy(
-                predictions=asr_prediction,
-                until_seq_idx=asr_pred_lengths,
-                idx_to_char=self.idx_to_char,
-            )
-            label_transcriptions = batch.transcriptions
+        # save gradients for task 1
 
-            train_wer = calculate_wer(predicted_transcriptions, label_transcriptions)
+        # forward and backward step for task 2 (sv)
 
-            # speech
-            self._log_train_predictions(
-                batch,
-                batch_idx,
-                predicted_transcriptions,
-                label_transcriptions,
-                train_wer,
-            )
-            self._log_train_wer(train_wer, batch_idx)
+        # save gradients for task 2
 
-            # speaker
-            self._log_train_acc(speaker_prediction, batch.id_tensor, batch_idx)
-            self._log_train_batch_info(batch)
+        # combine gradients for task 1 and 2, and set grad values
 
-            # loss
-            self._log_train_loss(
-                summed_loss, speaker_loss_value, speech_loss_value, batch_idx
-            )
-
-        return summed_loss
+        # step weights
 
     def _log_train_batch_info(self, batch):
         with (pathlib.Path.cwd() / "train_batch_info.log").open("a") as f:
@@ -291,11 +261,13 @@ class DisjoinedMTLLightningModule(BaseLightningModule):
 
     def validation_step(
         self,
-        batch: SpeechAndSpeakerRecognitionBatch,
+        batch: Union[SpeechRecognitionBatch, SpeakerRecognitionBatch],
         batch_idx: int,
         dataloader_idx: Optional[int] = None,
     ) -> Optional[STEP_OUTPUT]:
-        assert isinstance(batch, SpeechAndSpeakerRecognitionBatch)
+        assert isinstance(batch, SpeechRecognitionBatch) or isinstance(
+            batch, SpeakerRecognitionBatch
+        )
 
         (
             _,
@@ -404,11 +376,13 @@ class DisjoinedMTLLightningModule(BaseLightningModule):
 
     def test_step(
         self,
-        batch: SpeechAndSpeakerRecognitionBatch,
+        batch: Union[SpeechRecognitionBatch, SpeakerRecognitionBatch],
         batch_idx: int,
         dataloader_idx: Optional[int] = None,
     ) -> Optional[STEP_OUTPUT]:
-        assert isinstance(batch, SpeechAndSpeakerRecognitionBatch)
+        assert isinstance(batch, SpeechRecognitionBatch) or isinstance(
+            batch, SpeakerRecognitionBatch
+        )
 
         (
             _,

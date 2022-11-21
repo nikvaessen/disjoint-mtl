@@ -34,7 +34,7 @@ OmegaConf.register_new_resolver("random_name", random_experiment_id)
 
 
 @hydra.main(
-    config_path="config", config_name="train_mt_speaker_speech", version_base="1.2"
+    config_path="config", config_name="train_mtl_disjoint", version_base="1.2"
 )
 def run(cfg: DictConfig):
     # we import here such that tab-completion in bash

@@ -47,6 +47,8 @@ from src.network.wav2vec2 import (
     Wav2vec2ForSpeechRecognition,
     Wav2vec2ForJointMTLConfig,
     Wav2vec2ForJointMTL,
+    Wav2vec2ForDisjointMTLConfig,
+    Wav2vec2ForDisjointMTL,
 )
 from src.network.wavlm import (
     WavLMForSpeakerRecognitionConfig,
@@ -236,11 +238,11 @@ def construct_speech_recognition_module(
 
 def construct_mtl_module(
     cfg: DictConfig,
-    network_cfg: Union[Wav2vec2ForJointMTLConfig],
+    network_cfg: Union[Wav2vec2ForJointMTLConfig, Wav2vec2ForDisjointMTLConfig],
     dm: JointMTLDataModule,
     loss_fn_constructor: Callable[[], Callable[[t.Tensor, t.Tensor], t.Tensor]],
 ):
-    assert isinstance(dm, JointMTLDataModule)
+    assert isinstance(dm, JointMTLDataModule) or isinstance(dm, DisjointMTLDataModule)
 
     # every speaker recognition network needs to be given these variables
     # for training purposes
@@ -252,8 +254,8 @@ def construct_mtl_module(
     # get init function based on config type
     if isinstance(network_cfg, Wav2vec2ForJointMTLConfig):
         network_class = Wav2vec2ForJointMTL
-    # elif isinstance(network_cfg, WavLMForSpeechRecognitionConfig):
-    #     network_class = WavLMForSpeechRecognition
+    elif isinstance(network_cfg, Wav2vec2ForDisjointMTLConfig):
+        network_class = Wav2vec2ForDisjointMTL
     else:
         raise ValueError(f"cannot load network from {network_cfg}")
 
@@ -291,7 +293,10 @@ def init_model(cfg: DictConfig, network_class, kwargs: Dict):
 def construct_network_module(
     cfg: DictConfig,
     dm: Union[
-        SpeechRecognitionDataModule, SpeakerRecognitionDataModule, JointMTLDataModule
+        SpeechRecognitionDataModule,
+        SpeakerRecognitionDataModule,
+        JointMTLDataModule,
+        DisjointMTLDataModule,
     ],
 ):
     # load loss function
@@ -321,6 +326,8 @@ def construct_network_module(
             cfg, network_cfg, dm, loss_fn_constructor
         )
     elif isinstance(network_cfg, Wav2vec2ForJointMTLConfig):
+        network = construct_mtl_module(cfg, network_cfg, dm, loss_fn_constructor)
+    elif isinstance(network_cfg, Wav2vec2ForDisjointMTLConfig):
         network = construct_mtl_module(cfg, network_cfg, dm, loss_fn_constructor)
     else:
         raise ValueError(
