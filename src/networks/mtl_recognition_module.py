@@ -85,9 +85,6 @@ class MTLLightningModule(BaseLightningModule):
 
         self.metric_val_acc = torchmetrics.Accuracy()
 
-        # Important: This property activates manual optimization.
-        self.automatic_optimization = False
-
     @abstractmethod
     def compute_embedding_sequence(
         self, input_tensor: t.Tensor, lengths: List[int]
@@ -148,7 +145,7 @@ class MTLLightningModule(BaseLightningModule):
 
     def training_step(
         self,
-        batch: Union[SpeechAndSpeakerRecognitionBatch, Tuple[SpeechRecognitionbatch, SpeakerRecognitionBatch]],
+        batch: SpeechAndSpeakerRecognitionBatch,
         batch_idx: int,
         optimized_idx: Optional[int] = None,
     ) -> STEP_OUTPUT:
@@ -205,15 +202,7 @@ class MTLLightningModule(BaseLightningModule):
                 summed_loss, speaker_loss_value, speech_loss_value, batch_idx
             )
 
-        # manual optimization
-        opt = self.optimizers()
-        lr_scheduler = self.lr_schedulers()
-
-        opt.zero_grad()
-        self.manual_backward(summed_loss)
-
-        opt.step()
-        lr_scheduler.step()
+        return summed_loss
 
     def _log_train_batch_info(self, batch):
         with (pathlib.Path.cwd() / "train_batch_info.log").open("a") as f:
