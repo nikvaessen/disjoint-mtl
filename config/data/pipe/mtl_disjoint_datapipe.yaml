@@ -19,7 +19,7 @@ speaker:
 
     # logic for giving each worker equal number of data
     allow_partial_shards: true
-    num_workers: 5
+    num_workers: 2
     drop_last: true
 
   val_dp:
@@ -81,12 +81,12 @@ speech:
     bucket_buffer: 15
 
     # batching
-    max_tokens: 3_200_000
+    max_tokens: 1_600_000
     max_len: 320_000
 
     # logic for giving each worker equal number of data
     allow_partial_shards: true
-    num_workers: 5
+    num_workers: 3
 
   val_dp:
     _target_: data_utility.pipe.builder.SpeechRecognitionDataPipeBuilderConfig
