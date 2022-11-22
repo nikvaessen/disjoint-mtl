@@ -290,6 +290,8 @@ class DisjointMTLLightningModule(BaseLightningModule):
         else:
             g0 = None
 
+        print(f"### {batch_idx=} ###\n{g0=}\n{g1=}\n{g2=}\n\n")
+
         # step weights
         opt = self.optimizers()
         lr_schedule = self.lr_schedulers()
@@ -401,7 +403,7 @@ class DisjointMTLLightningModule(BaseLightningModule):
     def _log_train_gradients(
         self, batch_idx: int, g0: t.Tensor, g1: t.Tensor, g2: t.Tensor
     ):
-        if g0 is None and g1 is None and g2 is None:
+        if g0 is None or g1 is None or g2 is None:
             return
 
         g0g1 = torch.dot(g0, g1)
