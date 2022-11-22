@@ -6,11 +6,12 @@
 ########################################################################################
 
 from dataclasses import dataclass
-from typing import Callable, List, Optional, Dict, Tuple, Iterator
+from typing import Callable, List, Optional, Dict, Tuple, Iterator, Any
 
 import torch as t
 
 from omegaconf import DictConfig
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch.nn import Parameter
 from torch.optim import Optimizer
 from transformers import Wav2Vec2Model
@@ -196,8 +197,8 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
         self.freeze_cnn.on_train_start()
         self.freeze_transformer.on_train_start()
 
-    def on_before_optimizer_step(
-        self, optimizer: Optimizer, optimizer_idx: int
+    def on_train_batch_end(
+        self, outputs: STEP_OUTPUT, batch: Any, batch_idx: int
     ) -> None:
-        self.freeze_cnn.on_before_optimizer_step()
-        self.freeze_transformer.on_before_optimizer_step()
+        self.freeze_cnn.on_train_batch_end()
+        self.freeze_transformer.on_train_batch_end()

@@ -42,8 +42,7 @@ class FreezeManager:
 
         self._num_steps = 0
 
-    def on_before_optimizer_step(self) -> None:
-        print(f"{self._num_steps=}")
+    def on_train_batch_end(self) -> None:
         if self._should_unfreeze:
             self._num_steps += 1
 

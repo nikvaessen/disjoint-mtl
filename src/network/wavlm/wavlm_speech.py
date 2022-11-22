@@ -6,11 +6,12 @@
 ########################################################################################
 
 from dataclasses import dataclass
-from typing import Callable, List, Optional, Dict, Tuple
+from typing import Callable, List, Optional, Dict, Tuple, Any
 
 import torch as t
 
 from omegaconf import DictConfig
+from pytorch_lightning.utilities.types import STEP_OUTPUT
 from transformers import WavLMModel
 
 from src.network.heads import SpeechHeadConfig, construct_speech_head
@@ -151,6 +152,8 @@ class WavLMForSpeechRecognition(SpeechRecognitionLightningModule):
         self.freeze_cnn.on_train_start()
         self.freeze_transformer.on_train_start()
 
-    def on_after_backward(self) -> None:
-        self.freeze_cnn.on_after_backward()
-        self.freeze_transformer.on_after_backward()
+    def on_train_batch_end(
+        self, outputs: STEP_OUTPUT, batch: Any, batch_idx: int
+    ) -> None:
+        self.freeze_cnn.on_train_batch_end()
+        self.freeze_transformer.on_train_batch_end()

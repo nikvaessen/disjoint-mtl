@@ -290,8 +290,6 @@ class DisjointMTLLightningModule(BaseLightningModule):
         else:
             g0 = None
 
-        print(f"\n### {batch_idx=} ###\n{g0=}\n{g1=}\n{g2=}\n\n")
-
         # step weights
         opt = self.optimizers()
         lr_schedule = self.lr_schedulers()
