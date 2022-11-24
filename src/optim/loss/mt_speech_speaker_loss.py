@@ -74,6 +74,43 @@ class MTSpeechAndSpeakerLoss(nn.Module):
                 scale=aam_scale,
             )
 
+    def compute_speech_loss(
+        self,
+        speech_predictions: t.Tensor,
+        speech_prediction_lengths: List[int],
+        speech_ground_truths: t.Tensor,
+        speech_ground_truth_lengths: List[int],
+    ):
+        return self.speech_loss(
+            predictions=speech_predictions,
+            ground_truths=speech_ground_truths,
+            prediction_lengths=speech_prediction_lengths,
+            ground_truth_lengths=speech_ground_truth_lengths,
+        )
+
+    def compute_speaker_loss(
+        self,
+        speaker_logits: t.Tensor,
+        speaker_labels: t.Tensor,
+    ):
+        speaker_loss_value, speaker_prediction = self.speaker_loss(
+            speaker_logits, speaker_labels
+        )
+
+        return speaker_loss_value, speaker_prediction
+
+    def compute_scale(self, speech_loss_value, speaker_loss_value):
+        if self.scaler is not None:
+            (
+                speech_weight,
+                speaker_weight,
+            ) = self.scaler(speech_loss_value, speaker_loss_value)
+        else:
+            speech_weight = t.tensor(1)
+            speaker_weight = t.tensor(1)
+
+        return speech_weight, speaker_weight
+
     def forward(
         self,
         speech_predictions: t.Tensor,
@@ -82,30 +119,28 @@ class MTSpeechAndSpeakerLoss(nn.Module):
         speech_ground_truth_lengths: List[int],
         speaker_logits: t.Tensor,
         speaker_labels: t.Tensor,
+        apply_scaling: bool = False,
     ):
-        speech_loss_value = self.speech_loss(
-            predictions=speech_predictions,
-            ground_truths=speech_ground_truths,
-            prediction_lengths=speech_prediction_lengths,
-            ground_truth_lengths=speech_ground_truth_lengths,
+        speech_loss_value = self.compute_speech_loss(
+            speech_predictions,
+            speech_prediction_lengths,
+            speech_ground_truths,
+            speech_ground_truth_lengths,
         )
-        speaker_loss_value, speaker_prediction = self.speaker_loss(
+
+        speaker_loss_value, speaker_prediction = self.compute_speaker_loss(
             speaker_logits, speaker_labels
         )
 
-        if self.scaler is not None:
-            (scaled_speech_loss_value, scaled_speaker_loss_value), (
-                speech_weight,
-                speaker_weight,
-            ) = self.scaler(speech_loss_value, speaker_loss_value)
-            summed_loss = scaled_speaker_loss_value + scaled_speech_loss_value
-        else:
-            summed_loss = speaker_loss_value + speech_loss_value
-            speech_weight = t.tensor(1)
-            speaker_weight = t.tensor(1)
+        speech_weight, speaker_weight = self.compute_scale(
+            speech_loss_value, speaker_loss_value
+        )
+
+        if apply_scaling:
+            speech_loss_value = speech_loss_value * speech_weight
+            speaker_loss_value = speaker_loss_value * speaker_weight
 
         return (
-            summed_loss,
             speech_loss_value,
             speaker_loss_value,
             speaker_prediction,

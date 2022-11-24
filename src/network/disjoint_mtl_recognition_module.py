@@ -80,7 +80,7 @@ def ca_grad(g1: t.Tensor, g2: t.Tensor, c: t.Tensor):
         coef = phi_sqrt / gw_norm
         g = g0 + (coef * gw)
 
-        return g
+        return g, [opt_w1, opt_w2]
 
 
 class DisjointMTLLightningModule(BaseLightningModule):
@@ -104,6 +104,8 @@ class DisjointMTLLightningModule(BaseLightningModule):
             raise ValueError(
                 f"expected loss class {MTSpeechAndSpeakerLoss}, got {self.loss_fn.__class__}"
             )
+
+        self.loss_fn: MTSpeechAndSpeakerLoss = self.loss_fn
 
         # input arguments
         self.idx_to_char = idx_to_char
@@ -133,6 +135,8 @@ class DisjointMTLLightningModule(BaseLightningModule):
         self.metric_train_loss = torchmetrics.MeanMetric()
         self.metric_train_speech_loss = torchmetrics.MeanMetric()
         self.metric_train_speaker_loss = torchmetrics.MeanMetric()
+        self.metric_train_speaker_weight = torchmetrics.MeanMetric()
+        self.metric_train_speech_weight = torchmetrics.MeanMetric()
         self.train_grad_dict = defaultdict(list)
 
         self.metric_train_acc = torchmetrics.Accuracy()
@@ -208,7 +212,7 @@ class DisjointMTLLightningModule(BaseLightningModule):
             (speaker_embedding, speaker_prediction),
         )
 
-    def grad2vec(self, apply_zero_grad: bool = True):
+    def grad2vec(self, set_grad_to_none=True):
         with torch.no_grad():
             # extract all gradients from shared parameters and put them into a single vector
             reconstruction_dict = {}
@@ -222,7 +226,7 @@ class DisjointMTLLightningModule(BaseLightningModule):
                     stack.append(flat_grad)
                     start_idx += flat_grad.shape[0]
 
-                    if apply_zero_grad:
+                    if set_grad_to_none:
                         param.grad = None
 
             if len(stack) == 0:  # network is frozen
@@ -254,49 +258,61 @@ class DisjointMTLLightningModule(BaseLightningModule):
         assert isinstance(asr_batch, SpeechRecognitionBatch)
         assert isinstance(sv_batch, SpeakerRecognitionBatch)
 
+        # needed to step
+        opt = self.optimizers()
+        lr_schedule = self.lr_schedulers()
+        self.zero_grad(set_to_none=True)
+
         # forward step for task 1 (asr)
         (_, (asr_prediction, asr_pred_lengths), _) = self.forward(
             asr_batch.audio_tensor, asr_batch.audio_num_frames
         )
-        loss_speech = self.loss_fn.speech_loss(
-            predictions=asr_prediction,
-            ground_truths=asr_batch.transcriptions_tensor,
-            prediction_lengths=asr_pred_lengths,
-            ground_truth_lengths=asr_batch.transcriptions_length,
+        loss_speech = self.loss_fn.compute_speech_loss(
+            speech_predictions=asr_prediction,
+            speech_prediction_lengths=asr_pred_lengths,
+            speech_ground_truths=asr_batch.transcriptions_tensor,
+            speech_ground_truth_lengths=asr_batch.transcriptions_length,
         )
 
         # forward step for task 2 (sv)
         (_, _, (sv_embedding, sv_logits)) = self.forward(
             sv_batch.audio_tensor, sv_batch.audio_num_frames
         )
-        loss_speaker, sv_prediction = self.loss_fn.speaker_loss(
-            sv_logits, sv_batch.id_tensor
+        loss_speaker, sv_prediction = self.loss_fn.compute_speaker_loss(
+            speaker_logits=sv_logits, speaker_labels=sv_batch.id_tensor
         )
 
-        # combine gradients for task 1 and 2
+        # scale losses
+        speech_weight, speaker_weight = self.loss_fn.compute_scale(
+            speech_loss_value=loss_speech, speaker_loss_value=loss_speaker
+        )
+
+        loss_speech = loss_speech * speech_weight
+        loss_speaker = loss_speaker * speaker_weight
+
+        # backward step for task 1
         self.manual_backward(loss_speech)
-        g1, g1_dict = self.grad2vec()
+        g1, g1_dict = self.grad2vec(set_grad_to_none=True)
+
+        # backward step for task 2
         self.manual_backward(loss_speaker)
-        g2, g2_dict = self.grad2vec()
+        g2, g2_dict = self.grad2vec(set_grad_to_none=True)
 
         if g1 is not None and g2 is not None:
-            # network is not frozen
+            # shared network is not frozen
             if self.apply_ca_grad:
-                g0 = ca_grad(g1, g2, self.ca_grad_c)
+                g0, ca_grad_weights = ca_grad(g1, g2, self.ca_grad_c)
             else:
                 g0 = avg_grad(g1, g2)
+                ca_grad_weights = None
 
             self.vec2grad(g0, g1_dict)
         else:
             g0 = None
-
-        # step weights
-        opt = self.optimizers()
-        lr_schedule = self.lr_schedulers()
+            ca_grad_weights = None
 
         opt.step()
         lr_schedule.step()
-        self.zero_grad()
 
         # log values
         with torch.no_grad():
@@ -318,9 +334,14 @@ class DisjointMTLLightningModule(BaseLightningModule):
             )
             self._log_train_wer(train_wer, batch_idx)
             self._log_train_loss(
-                (loss_speaker + loss_speech) / 2, loss_speaker, loss_speech, batch_idx
+                (loss_speaker + loss_speech),
+                loss_speaker,
+                loss_speech,
+                speech_weight,
+                speaker_weight,
+                batch_idx,
             )
-            self._log_train_gradients(batch_idx, g0, g1, g2)
+            self._log_train_gradients(batch_idx, g0, g1, g2, ca_grad_weights)
 
     def _log_train_acc(self, prediction: t.Tensor, label: t.Tensor, batch_idx: int):
         self.metric_train_acc(prediction, label)
@@ -376,11 +397,15 @@ class DisjointMTLLightningModule(BaseLightningModule):
         loss: t.Tensor,
         speaker_loss: t.Tensor,
         speech_loss: t.Tensor,
+        speech_weight: t.Tensor,
+        speaker_weight: t.Tensor,
         batch_idx: int,
     ):
         self.metric_train_loss(loss)
         self.metric_train_speaker_loss(speaker_loss)
         self.metric_train_speech_loss(speech_loss)
+        self.metric_train_speaker_weight(speaker_weight)
+        self.metric_train_speech_weight(speech_weight)
 
         if batch_idx % 100 == 0:
             self.log_dict(
@@ -388,6 +413,8 @@ class DisjointMTLLightningModule(BaseLightningModule):
                     "train_loss": self.metric_train_loss.compute(),
                     "train_speaker_loss": self.metric_train_speaker_loss.compute(),
                     "train_speech_loss": self.metric_train_speech_loss.compute(),
+                    "speech_weight": self.metric_train_speaker_weight.compute(),
+                    "speaker_weight": self.metric_train_speaker_weight.compute(),
                 },
                 on_step=True,
                 on_epoch=False,
@@ -397,32 +424,75 @@ class DisjointMTLLightningModule(BaseLightningModule):
             self.metric_train_loss.reset()
             self.metric_train_speaker_loss.reset()
             self.metric_train_speech_loss.reset()
+            self.metric_train_speaker_weight.reset()
+            self.metric_train_speech_weight.reset()
 
     def _log_train_gradients(
-        self, batch_idx: int, g0: t.Tensor, g1: t.Tensor, g2: t.Tensor
+        self,
+        batch_idx: int,
+        g0: t.Tensor,
+        g1: t.Tensor,
+        g2: t.Tensor,
+        ca_grad_weights: List[int],
     ):
         if g0 is None or g1 is None or g2 is None:
             return
 
         g0g1 = torch.dot(g0, g1)
         g0g2 = torch.dot(g0, g2)
-        g1g1 = torch.dot(g1, g2)
+        g1g2 = torch.dot(g1, g2)
 
-        self.train_grad_dict["g0g1"].append(g0g1)
-        self.train_grad_dict["g0g2"].append(g0g2)
-        self.train_grad_dict["g1g2"].append(g1g1)
+        if not t.any(t.isnan(t.tensor([g0g1, g0g2, g1g2]))).item():
+            self.train_grad_dict["g0g1"].append(g0g1)
+            self.train_grad_dict["g0g2"].append(g0g2)
+            self.train_grad_dict["g1g2"].append(g1g2)
+            if ca_grad_weights is not None:
+                self.train_grad_dict["w1"].append(ca_grad_weights[0])
+                self.train_grad_dict["w2"].append(ca_grad_weights[1])
+        else:
+            if t.any(t.isnan(g1)).item():
+                self.train_grad_dict["nan_count_g1"].append(1)
+            if t.any(t.isnan(g2)).item():
+                self.train_grad_dict["nan_count_g2"].append(1)
 
-        if batch_idx % 100 == 0:
+        if batch_idx % 100 == 0 and batch_idx > 0:
+            if ca_grad_weights is not None:
+                w1_tensor = t.tensor(self.train_grad_dict["w1"])
+                w2_tensor = t.tensor(self.train_grad_dict["w2"])
+
+                self.train_grad_dict["w1"].clear()
+                self.train_grad_dict["w2"].clear()
+
+                self.log("ca_grad_w1_avg", t.mean(w1_tensor))
+                self.log("ca_grad_w2_avg", t.mean(w2_tensor))
+                self.log("ca_grad_w1_min", t.min(w1_tensor))
+                self.log("ca_grad_w2_min", t.min(w2_tensor))
+                self.log("ca_grad_w1_max", t.max(w1_tensor))
+                self.log("ca_grad_w2_max", t.max(w2_tensor))
+
+            nan_count_g1 = sum(self.train_grad_dict["nan_count_g1"])
+            nan_count_g2 = sum(self.train_grad_dict["nan_count_g2"])
+
+            self.train_grad_dict["nan_count_g1"].clear()
+            self.train_grad_dict["nan_count_g2"].clear()
+            self.log("nan_count_g1", nan_count_g1)
+            self.log("nan_count_g2", nan_count_g2)
+
             for key in ["g0g1", "g0g2", "g1g2"]:
                 value_list = self.train_grad_dict[key]
-                self.train_grad_dict[key] = []
+
+                if len(value_list) == 0:
+                    continue
 
                 value_tensor = t.tensor(value_list)
+                self.train_grad_dict[key].clear()
 
                 self.log(f"{key}_min", t.min(value_tensor))
                 self.log(f"{key}_max", t.max(value_tensor))
                 self.log(f"{key}_avg", t.mean(value_tensor))
-                self.log(f"{key}_pos_count", t.sum(value_tensor > 0))
+                self.log(
+                    f"{key}_pos_percent", t.sum(value_tensor > 0) / value_tensor.numel()
+                )
 
     def validation_step(
         self,

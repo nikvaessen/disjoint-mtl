@@ -33,10 +33,9 @@ class StaticScaling(nn.Module):
             )
 
         # scale each loss value with the static weight
-        loss_values = [loss * self.weights[idx] for idx, loss in enumerate(loss_values)]
         weight_values = [self.weights[idx] for idx, _ in enumerate(loss_values)]
 
-        return loss_values, weight_values
+        return weight_values
 
 
 ########################################################################################
@@ -53,10 +52,9 @@ def _dynamic_scale_generic(*values: t.Tensor, fn: Union[t.min, t.max] = None):
         scaled_loss = fn(scalars)
         scale_factors = scaled_loss / scalars
 
-    loss_values = [loss * scale_factors[idx] for idx, loss in enumerate(values)]
-    weight_values = [scale_factors[idx] for idx, _ in enumerate(loss_values)]
+    weight_values = [scale_factors[idx] for idx, _ in enumerate(values)]
 
-    return loss_values, weight_values
+    return weight_values
 
 
 class DynamicScaling(nn.Module):
@@ -97,6 +95,7 @@ class DynamicWeightAveraging(nn.Module):
         # average
         self.use_average_loss = use_average_loss
         self.average_loss_window = average_loss_window
+
         if average_loss_window <= 0:
             raise ValueError("average loss window should be at least 1")
 
@@ -135,10 +134,9 @@ class DynamicWeightAveraging(nn.Module):
             self.loss_windows[idx].append(loss.item())
 
         # scale each loss value with the weight
-        loss_values = [loss * weights[idx] for idx, loss in enumerate(loss_values)]
         weight_values = [weights[idx] for idx, _ in enumerate(loss_values)]
 
-        return loss_values, weight_values
+        return weight_values
 
     def _weight_k(self, k: int):
         # L_k(t-1)
