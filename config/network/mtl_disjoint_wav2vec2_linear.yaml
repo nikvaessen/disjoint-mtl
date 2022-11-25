@@ -17,6 +17,10 @@ use_gradient_checkpointing: true
 apply_ca_grad: false
 ca_grad_c: 0.5
 
+# settings for data source ID head
+apply_dsi_head: false
+dsi_head_alpha: 1
+
 # head on top of wav2vec2 for speaker recognition
 speaker_head_cfg:
   _target_: src.network.heads.LinearProjectionHeadConfig

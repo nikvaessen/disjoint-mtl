@@ -14,6 +14,7 @@ from collections import defaultdict
 from typing import Callable, Optional, List, Dict, Tuple, Any, Union, Iterator
 
 import math
+import numpy as np
 import torch.nn
 import torchmetrics
 
@@ -21,7 +22,7 @@ import torch as t
 
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from omegaconf import DictConfig
-from scipy.optimize import minimize_scalar
+from scipy.optimize import minimize_scalar, minimize
 from torch.nn import Parameter
 
 from data_utility.eval.speaker.cosine_dist_evaluator import CosineDistanceEvaluator
@@ -34,6 +35,7 @@ from data_utility.pipe.containers import (
     SpeechRecognitionBatch,
     SpeakerRecognitionBatch,
 )
+from src.layers.grad_reverse import InverseGradient
 from src.network.base_lightning_module import BaseLightningModule
 from src.network.speaker_recognition_module import evaluate_embeddings
 from src.optim.loss.mt_speech_speaker_loss import MTSpeechAndSpeakerLoss
@@ -46,12 +48,15 @@ from src.optim.loss.mt_speech_speaker_loss import MTSpeechAndSpeakerLoss
 log = logging.getLogger(__name__)
 
 
-def avg_grad(g1: t.Tensor, g2: t.Tensor):
+def avg_grad(g1: t.Tensor, g2: t.Tensor, g3: Optional[t.Tensor] = None):
     with torch.no_grad():
-        return (g1 + g2) / 2
+        if g3 is not None:
+            return (g1 + g2 + g3) / 3
+        else:
+            return (g1 + g2) / 2
 
 
-def ca_grad(g1: t.Tensor, g2: t.Tensor, c: t.Tensor):
+def ca_grad_k2(g1: t.Tensor, g2: t.Tensor, c: t.Tensor):
     with torch.no_grad():
         g0 = (g1 + g2) / 2
         g0_norm = torch.linalg.norm(g0)
@@ -83,6 +88,69 @@ def ca_grad(g1: t.Tensor, g2: t.Tensor, c: t.Tensor):
         return g, [opt_w1, opt_w2]
 
 
+def ca_grad_k3(g1: t.Tensor, g2: t.Tensor, g3: t.Tensor, c: t.Tensor):
+    with torch.no_grad():
+        g0 = (g1 + g2 + g3) / 3
+        g0_norm = torch.linalg.norm(g0)
+        phi = c**2 * g0_norm**2
+        phi_sqrt = torch.sqrt(phi)
+
+        def min_fn(w_array):
+            w1 = w_array[0].item()
+            w2 = w_array[1].item()
+            w3 = w_array[2].item()
+
+            gw_temp = (w1 * g1) + (w2 * g2) + (w3 * g3) / 3
+            gw_norm_temp = torch.linalg.norm(gw_temp)
+
+            gwg0 = torch.dot(gw_temp, g0)
+
+            objective = gwg0 + (phi_sqrt * gw_norm_temp)
+
+            return objective.cpu().detach().item()
+
+        start_point = np.array([0.33, 0.33, 0.33])
+        res = minimize(
+            min_fn,
+            start_point,
+            bounds=[(0, 1), (0, 1), (0, 1)],
+            constraints={"type": "eq", "fun": lambda x: 1 - np.sum(x)},
+        )
+
+        opt_w1 = res.x[0].item()
+        opt_w2 = res.x[1].item()
+        opt_w3 = res.x[2].item()
+
+        print()
+        print(res)
+        print(f"\n{opt_w1=} {opt_w2=} {opt_w3=}")
+
+        gw = (opt_w1 * g1) + (opt_w2 * g2) + (opt_w3 * g3)
+        gw_norm = torch.linalg.norm(gw)
+        coef = phi_sqrt / gw_norm
+        g = g0 + (coef * gw)
+
+        return g, [opt_w1, opt_w2, opt_w3]
+
+
+class DataSourceIdentityHead(t.nn.Module):
+    def __init__(self, embedding_size: int, alpha: float = 1):
+        super().__init__()
+
+        self.fc = t.nn.Linear(in_features=embedding_size, out_features=2)
+        self.inverse = InverseGradient(alpha)
+        self.loss_fn = t.nn.CrossEntropyLoss()
+
+    def forward(self, embeddings: t.Tensor, labels: List[int]):
+        # shape [bs, num_frames, embedding_size]
+        prediction = self.inverse(self.fc(embeddings))
+
+        labels = t.tensor(labels, dtype=t.long, device=embeddings.device)
+        loss = self.loss_fn(prediction, labels)
+
+        return loss
+
+
 class DisjointMTLLightningModule(BaseLightningModule):
     def __init__(
         self,
@@ -97,6 +165,8 @@ class DisjointMTLLightningModule(BaseLightningModule):
         test_pairs: List[List[SpeakerTrial]],
         apply_ca_grad: bool,
         ca_grad_c: float,
+        apply_dsi_head: bool = False,
+        dsi_head_alpha: float = 1,
     ):
         super().__init__(hyperparameter_config, loss_fn_constructor)
 
@@ -124,6 +194,17 @@ class DisjointMTLLightningModule(BaseLightningModule):
         # opt settings
         self.apply_ca_grad = apply_ca_grad
         self.ca_grad_c = t.tensor(ca_grad_c)
+
+        # whether to apply the data source identity reversal method
+        self.apply_dsi_head = apply_dsi_head
+        self.dsi_head_alpha = dsi_head_alpha
+
+        if self.apply_dsi_head:
+            self.dsi_head = DataSourceIdentityHead(
+                embedding_size=self.sequence_embedding_size(), alpha=dsi_head_alpha
+            )
+            self.metric_train_dsi_loss = torchmetrics.MeanMetric()
+            self.metric_train_dsi_weight = torchmetrics.MeanMetric()
 
         # evaluator
         self.evaluator = CosineDistanceEvaluator(
@@ -178,6 +259,11 @@ class DisjointMTLLightningModule(BaseLightningModule):
     def speaker_embedding_size(self):
         pass
 
+    @property
+    @abstractmethod
+    def sequence_embedding_size(self):
+        pass
+
     @abstractmethod
     def compute_speaker_prediction(self, embedding_tensor: t.Tensor) -> t.Tensor:
         # transform embedding tensor with shape [BATCH_SIZE, EMBEDDING_SIZE]
@@ -211,6 +297,28 @@ class DisjointMTLLightningModule(BaseLightningModule):
             (asr_prediction, asr_pred_lengths),
             (speaker_embedding, speaker_prediction),
         )
+
+    def forward_dsi_head(
+        self,
+        input_tensor_asr: torch.Tensor,
+        asr_lengths: List[int],
+        input_tensor_sv,
+        sv_lengths: List[int],
+    ):
+        sequence_asr, sequence_lengths_asr = self.compute_embedding_sequence(
+            input_tensor_asr, asr_lengths
+        )
+        sequence_sv, sequence_lengths_sv = self.compute_embedding_sequence(
+            input_tensor_sv, sv_lengths
+        )
+
+        sequence_asr = t.mean(sequence_asr, dim=1)
+        sequence_sv = t.mean(sequence_sv, dim=1)
+        sequences = t.cat([sequence_sv, sequence_asr], dim=0)
+        labels = [] + [0 for _ in asr_lengths] + [1 for _ in sv_lengths]
+
+        loss = self.dsi_head(sequences, labels)
+        return loss
 
     def grad2vec(self, set_grad_to_none=True):
         with torch.no_grad():
@@ -282,13 +390,45 @@ class DisjointMTLLightningModule(BaseLightningModule):
             speaker_logits=sv_logits, speaker_labels=sv_batch.id_tensor
         )
 
-        # scale losses
-        speech_weight, speaker_weight = self.loss_fn.compute_scale(
-            speech_loss_value=loss_speech, speaker_loss_value=loss_speaker
-        )
+        if self.apply_dsi_head:
+            # create a batch for task 3
+            dsi_input_asr = (
+                asr_batch.audio_tensor.detach()
+                .clone()
+                .to(asr_batch.audio_tensor.device)
+            )
+            dsi_input_sv = (
+                sv_batch.audio_tensor.detach().clone().to(sv_batch.audio_tensor.device)
+            )
 
-        loss_speech = loss_speech * speech_weight
-        loss_speaker = loss_speaker * speaker_weight
+            loss_dsi_head = self.forward_dsi_head(
+                dsi_input_asr,
+                asr_batch.audio_num_frames,
+                dsi_input_sv,
+                sv_batch.audio_num_frames,
+            )
+
+        # scale losses
+        if self.apply_dsi_head:
+            speech_weight, speaker_weight, dsi_weight = self.loss_fn.compute_scale(
+                speech_loss_value=loss_speech,
+                speaker_loss_value=loss_speaker,
+                dsi_loss_value=loss_dsi_head,
+            )
+
+            loss_speech = loss_speech * speech_weight
+            loss_speaker = loss_speaker * speaker_weight
+            loss_dsi_head = loss_dsi_head * dsi_weight
+
+        else:
+            speech_weight, speaker_weight = self.loss_fn.compute_scale(
+                speech_loss_value=loss_speech, speaker_loss_value=loss_speaker
+            )
+
+            loss_speech = loss_speech * speech_weight
+            loss_speaker = loss_speaker * speaker_weight
+            loss_dsi_head = None
+            dsi_weight = None
 
         # backward step for task 1
         self.manual_backward(loss_speech)
@@ -298,12 +438,22 @@ class DisjointMTLLightningModule(BaseLightningModule):
         self.manual_backward(loss_speaker)
         g2, g2_dict = self.grad2vec(set_grad_to_none=True)
 
+        if self.apply_dsi_head:
+            self.manual_backward(loss_dsi_head)
+            g3, g3_dict = self.grad2vec(set_grad_to_none=True)
+        else:
+            g3 = None
+
         if g1 is not None and g2 is not None:
-            # shared network is not frozen
             if self.apply_ca_grad:
-                g0, ca_grad_weights = ca_grad(g1, g2, self.ca_grad_c)
+                if g3 is None:
+                    g0, ca_grad_weights = ca_grad_k2(g1, g2, self.ca_grad_c)
+
+                else:
+                    g0, ca_grad_weights = ca_grad_k3(g1, g2, g3, self.ca_grad_c)
+
             else:
-                g0 = avg_grad(g1, g2)
+                g0 = avg_grad(g1, g2, g3)
                 ca_grad_weights = None
 
             self.vec2grad(g0, g1_dict)
@@ -339,9 +489,11 @@ class DisjointMTLLightningModule(BaseLightningModule):
                 loss_speech,
                 speech_weight,
                 speaker_weight,
+                loss_dsi_head,
+                dsi_weight,
                 batch_idx,
             )
-            self._log_train_gradients(batch_idx, g0, g1, g2, ca_grad_weights)
+            self._log_train_gradients(batch_idx, g0, g1, g2, g3, ca_grad_weights)
 
     def _log_train_acc(self, prediction: t.Tensor, label: t.Tensor, batch_idx: int):
         self.metric_train_acc(prediction, label)
@@ -399,6 +551,8 @@ class DisjointMTLLightningModule(BaseLightningModule):
         speech_loss: t.Tensor,
         speech_weight: t.Tensor,
         speaker_weight: t.Tensor,
+        dsi_head_loss: Optional[t.Tensor],
+        dsi_loss_weight: Optional[t.Tensor],
         batch_idx: int,
     ):
         self.metric_train_loss(loss)
@@ -406,6 +560,10 @@ class DisjointMTLLightningModule(BaseLightningModule):
         self.metric_train_speech_loss(speech_loss)
         self.metric_train_speaker_weight(speaker_weight)
         self.metric_train_speech_weight(speech_weight)
+
+        if dsi_head_loss is not None:
+            self.metric_train_dsi_loss(dsi_head_loss)
+            self.metric_train_dsi_weight(dsi_loss_weight)
 
         if batch_idx % 100 == 0:
             self.log_dict(
@@ -427,13 +585,27 @@ class DisjointMTLLightningModule(BaseLightningModule):
             self.metric_train_speaker_weight.reset()
             self.metric_train_speech_weight.reset()
 
+            if dsi_head_loss is not None:
+                self.log_dict(
+                    {
+                        "dsi_loss": self.metric_train_dsi_loss.compute(),
+                        "dsi_weight": self.metric_train_dsi_weight.compute(),
+                    },
+                    on_step=True,
+                    on_epoch=False,
+                )
+
+                self.metric_train_dsi_loss.reset()
+                self.metric_train_dsi_weight.reset()
+
     def _log_train_gradients(
         self,
         batch_idx: int,
         g0: t.Tensor,
         g1: t.Tensor,
         g2: t.Tensor,
-        ca_grad_weights: List[int],
+        g3: Optional[t.Tensor],
+        ca_grad_weights: Optional[List[int]],
     ):
         if g0 is None or g1 is None or g2 is None:
             return
@@ -446,9 +618,14 @@ class DisjointMTLLightningModule(BaseLightningModule):
             self.train_grad_dict["g0g1"].append(g0g1)
             self.train_grad_dict["g0g2"].append(g0g2)
             self.train_grad_dict["g1g2"].append(g1g2)
+
+            if g3 is not None:
+                g0g3 = torch.dot(g0, g3)
+                self.train_grad_dict["g0g3"].append(g0g3)
+
             if ca_grad_weights is not None:
-                self.train_grad_dict["w1"].append(ca_grad_weights[0])
-                self.train_grad_dict["w2"].append(ca_grad_weights[1])
+                for idx, w in enumerate(ca_grad_weights):
+                    self.train_grad_dict[f"w{idx+1}"].append(ca_grad_weights[idx])
         else:
             if t.any(t.isnan(g1)).item():
                 self.train_grad_dict["nan_count_g1"].append(1)
@@ -457,18 +634,15 @@ class DisjointMTLLightningModule(BaseLightningModule):
 
         if batch_idx % 100 == 0 and batch_idx > 0:
             if ca_grad_weights is not None:
-                w1_tensor = t.tensor(self.train_grad_dict["w1"])
-                w2_tensor = t.tensor(self.train_grad_dict["w2"])
+                if ca_grad_weights is not None:
+                    for idx, w in enumerate(ca_grad_weights):
+                        key = f"w{idx+1}"
+                        w_tensor = t.tensor(self.train_grad_dict[key])
+                        self.train_grad_dict[key].clear()
 
-                self.train_grad_dict["w1"].clear()
-                self.train_grad_dict["w2"].clear()
-
-                self.log("ca_grad_w1_avg", t.mean(w1_tensor))
-                self.log("ca_grad_w2_avg", t.mean(w2_tensor))
-                self.log("ca_grad_w1_min", t.min(w1_tensor))
-                self.log("ca_grad_w2_min", t.min(w2_tensor))
-                self.log("ca_grad_w1_max", t.max(w1_tensor))
-                self.log("ca_grad_w2_max", t.max(w2_tensor))
+                        self.log(f"ca_grad_{key}_avg", t.mean(w_tensor))
+                        self.log(f"ca_grad_{key}_min", t.min(w_tensor))
+                        self.log(f"ca_grad_{key}_max", t.max(w_tensor))
 
             nan_count_g1 = sum(self.train_grad_dict["nan_count_g1"])
             nan_count_g2 = sum(self.train_grad_dict["nan_count_g2"])
@@ -478,7 +652,10 @@ class DisjointMTLLightningModule(BaseLightningModule):
             self.log("nan_count_g1", nan_count_g1)
             self.log("nan_count_g2", nan_count_g2)
 
-            for key in ["g0g1", "g0g2", "g1g2"]:
+            for key in ["g0g1", "g0g2", "g1g2", "g0g3"]:
+                if key not in self.train_grad_dict:
+                    continue
+
                 value_list = self.train_grad_dict[key]
 
                 if len(value_list) == 0:

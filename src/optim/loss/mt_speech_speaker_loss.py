@@ -30,9 +30,10 @@ class MTSpeechAndSpeakerLoss(nn.Module):
         aam_scale: Optional[float] = 15,
         ctc_blank_idx: int = 0,
         scale_method: Optional[str] = None,  # one of 'min', 'max', 'static', 'dwa'
-        static_speech_weight: Optional[
-            float
-        ] = 0.5,  # and 1-static_speech_weight for static_speaker_weight
+        num_loss: int = 2,  # either 2 or 3
+        static_speech_weight: Optional[float] = 0.5,
+        static_speaker_weight: Optional[float] = 0.5,
+        static_dsi_weight: Optional[float] = 0.0,
         dwa_temperature: Optional[float] = 1,
         dwa_weight_sum: Optional[float] = 1,
         dwa_use_average_loss: Optional[bool] = True,
@@ -41,12 +42,14 @@ class MTSpeechAndSpeakerLoss(nn.Module):
 
         super().__init__()
 
+        self.num_loss = num_loss
+
         # setup dynamic scaling
         if scale_method in ["min", "max"]:
             self.scaler = DynamicScaling(mode=scale_method)
         elif scale_method == "dwa":
             self.scaler = DynamicWeightAveraging(
-                num_losses=2,
+                num_losses=self.num_loss,
                 use_average_loss=dwa_use_average_loss,
                 average_loss_window=dwa_average_loss_window,
                 weight_sum=dwa_weight_sum,
@@ -54,8 +57,11 @@ class MTSpeechAndSpeakerLoss(nn.Module):
             )
         elif scale_method == "static":
             self.scaler = StaticScaling(
-                weights=[static_speech_weight, 1 - static_speech_weight]
+                weights=[static_speech_weight, static_speaker_weight]
+                if self.num_loss == 2
+                else [static_speech_weight, static_speaker_weight, static_dsi_weight]
             )
+
         elif scale_method is None:
             self.scaler = None
         else:
@@ -99,17 +105,33 @@ class MTSpeechAndSpeakerLoss(nn.Module):
 
         return speaker_loss_value, speaker_prediction
 
-    def compute_scale(self, speech_loss_value, speaker_loss_value):
-        if self.scaler is not None:
-            (
-                speech_weight,
-                speaker_weight,
-            ) = self.scaler(speech_loss_value, speaker_loss_value)
-        else:
-            speech_weight = t.tensor(1)
-            speaker_weight = t.tensor(1)
+    def compute_scale(
+        self, speech_loss_value, speaker_loss_value, dsi_loss_value: Optional = None
+    ):
+        if self.num_loss == 3:
+            if dsi_loss_value is None:
+                raise ValueError("expected 3 loss values")
 
-        return speech_weight, speaker_weight
+            if self.scaler is not None:
+                (speech_weight, speaker_weight, dsi_weight) = self.scaler(
+                    speech_loss_value, speaker_loss_value, dsi_loss_value
+                )
+            else:
+                speech_weight = t.tensor(1)
+                speaker_weight = t.tensor(1)
+                dsi_weight = t.tensor(1)
+
+            return speech_weight, speaker_weight, dsi_weight
+        else:
+            if self.scaler is not None:
+                (speech_weight, speaker_weight) = self.scaler(
+                    speech_loss_value, speaker_loss_value
+                )
+            else:
+                speech_weight = t.tensor(1)
+                speaker_weight = t.tensor(1)
+
+            return speech_weight, speaker_weight
 
     def forward(
         self,

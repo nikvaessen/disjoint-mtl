@@ -13,7 +13,6 @@ import torch as t
 from omegaconf import DictConfig
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torch.nn import Parameter
-from torch.optim import Optimizer
 from transformers import Wav2Vec2Model
 
 from data_utility.eval.speaker.evaluator import SpeakerTrial
@@ -44,6 +43,10 @@ class Wav2vec2ForDisjointMTLConfig:
     apply_ca_grad: bool
     ca_grad_c: 0.5
 
+    # settings for data source ID head
+    apply_dsi_head: bool
+    dsi_head_alpha: float
+
     # freeze logic
     freeze_cnn: bool
     freeze_transformer: bool  # this also freezes projector and rel. pos. emb
@@ -73,6 +76,15 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
         test_modes: List[str],
         cfg: Wav2vec2ForDisjointMTLConfig,
     ):
+        self.cfg = cfg
+
+        if "base" in self.cfg.huggingface_id:
+            self.embedding_size = 768
+        elif "large" in self.cfg.huggingface_id:
+            self.embedding_size = 1024
+        else:
+            raise ValueError("unable to determine embedding size}")
+
         super().__init__(
             hyperparameter_config=root_hydra_config,
             loss_fn_constructor=loss_fn_constructor,
@@ -85,9 +97,10 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
             test_modes=test_modes,
             apply_ca_grad=cfg.apply_ca_grad,
             ca_grad_c=cfg.ca_grad_c,
+            apply_dsi_head=cfg.apply_dsi_head,
+            dsi_head_alpha=cfg.dsi_head_alpha,
         )
 
-        self.cfg = cfg
         self.vocab_size = len(idx_to_char)
 
         self.wav2vec2: Wav2Vec2Model = Wav2Vec2Model.from_pretrained(
@@ -96,13 +109,6 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
 
         if self.cfg.use_gradient_checkpointing:
             self.wav2vec2.gradient_checkpointing_enable()
-
-        if "base" in self.cfg.huggingface_id:
-            self.embedding_size = 768
-        elif "large" in self.cfg.huggingface_id:
-            self.embedding_size = 1024
-        else:
-            raise ValueError("unable to determine embedding size}")
 
         self.speech_head = construct_speech_head(
             self.cfg.speech_head_cfg,
@@ -186,6 +192,9 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
     @property
     def speaker_embedding_size(self):
         return self.speaker_head.speaker_embedding_size
+
+    def sequence_embedding_size(self):
+        return self.embedding_size
 
     def compute_speaker_prediction(self, embedding_tensor: t.Tensor) -> t.Tensor:
         return self.speaker_head.compute_prediction(embedding_tensor)

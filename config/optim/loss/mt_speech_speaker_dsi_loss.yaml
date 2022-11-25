@@ -22,9 +22,9 @@ dwa_use_average_loss: true
 dwa_average_loss_window: 5
 
 # number of losses
-num_loss: 2
+num_loss: 3
 
 # weighting between the loss functions (if scale_method=static)
-static_speech_weight: 0.5
-static_speaker_weight: 0.5
-static_dsi_weight: 0.0 # used when num_losses=3
+static_speech_weight: 0.4
+static_speaker_weight: 0.4
+static_dsi_weight: 0.2
