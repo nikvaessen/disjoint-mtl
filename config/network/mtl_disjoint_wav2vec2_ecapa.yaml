@@ -1,0 +1,36 @@
+_target_: src.network.wav2vec2.Wav2vec2ForDisjointMTLConfig
+
+# settings for wav2vec2 architecture
+huggingface_id: "facebook/wav2vec2-base"
+reset_weights: false
+
+# freeze logic
+freeze_cnn: true
+freeze_transformer: true  # this also freezes projector and rel. pos. emb
+num_steps_freeze_cnn: -1 # so always
+num_steps_freeze_transformer: 10_000
+
+# if enabled, gradient checkpointing slows down iteration speed but saves memory
+use_gradient_checkpointing: true
+
+# opt settings (conflict-adverse grad descent)
+apply_ca_grad: false
+ca_grad_c: 0.5
+
+# settings for data source ID head
+apply_dsi_head: false
+dsi_head_alpha: 1
+
+# head on top of wav2vec2 for speaker recognition
+speaker_head_cfg:
+  _target_: src.network.heads.EcapaTdnnHeadConfig
+  use_cosine_linear: false
+
+speech_head_cfg:
+  _target_: src.network.heads.LinearHeadConfig
+  blank_token_idx: ${optim.loss.ctc_blank_idx}
+
+  blank_initial_bias: 10
+  character_distribution_json: ${oc.env:LIBRISPEECH_DIR}/meta/character_distribution_train.json
+  character_vocabulary_json: ${oc.env:LIBRISPEECH_DIR}/meta/character_vocabulary.json
+
