@@ -109,4 +109,20 @@ hydra/launcher=slurm_24vram hydra.launcher.array_parallelism=4 \
 hydra.launcher.timeout_min=4800
 ```
 
+# log
 
+### exp 1
+
+```
+python run_speaker.py -m +experiments=speaker_aam_4cycle_nofreeze_ch3s_bs64 network=speaker_wav2vec2_linear \
+network.head_cfg.pool_method=mean,first data.pipe.speaker.train_dp.chunk_size_sec=3,9 tag=exp1 \
+hydra/launcher=slurm_24vram optim.algo.lr=0.0001,5e-5,1e-5 hydra.launcher.array_parallelism=2
+```
+
+### exp 2
+
+```
+python run_mtl_disjoint.py -m +experiments=mtl_vox2_ls optim.algo.lr=1e-4,5e-5,1e-5 \
+network.speaker_head_cfg.pool_method=first data/module=mtl_disjoint_ls960h,mtl_disjoint_ls960h_vox2 \
+data.pipe.speaker.train_dp.chunk_size_sec=3,9 tag=exp2 hydra/launcher=slurm_24vram 
+```
