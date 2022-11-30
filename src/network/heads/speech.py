@@ -52,8 +52,6 @@ class LinearHead(SpeechRecognitionHead):
 
         self.cfg = cfg
         self.classification_dim = classification_dim
-        print(f"\n{self.classification_dim=} {0 <= self.classification_dim < 3=}")
-        assert 0 <= self.classification_dim < 3
 
         self.classification_layer = t.nn.Linear(
             in_features=representation_dim,
