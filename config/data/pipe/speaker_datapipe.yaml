@@ -36,10 +36,10 @@ speaker:
 
     # chunk
     chunk_strategy: start
-    chunk_size_sec: ${data.pipe.train_dp.chunk_size_sec}
+    chunk_size_sec: ${data.pipe.speaker.train_dp.chunk_size_sec}
 
     # batching
-    batch_size: ${data.pipe.train_dp.batch_size}
+    batch_size: ${data.pipe.speaker.train_dp.batch_size}
 
     # logic for giving each worker equal number of data
     allow_partial_shards: true
