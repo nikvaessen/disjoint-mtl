@@ -52,6 +52,7 @@ class LinearHead(SpeechRecognitionHead):
 
         self.cfg = cfg
         self.classification_dim = classification_dim
+        assert 0 <= self.classification_dim < 3
 
         self.classification_layer = t.nn.Linear(
             in_features=representation_dim,
@@ -96,8 +97,8 @@ class LinearHead(SpeechRecognitionHead):
             requires_grad=True,
         )
 
-    def compute_prediction(self, embedding: t.Tensor) -> t.Tensor:
-        return self.classification_layer(embedding)
+    def compute_prediction(self, sequence: t.Tensor) -> t.Tensor:
+        return self.classification_layer(sequence)
 
 
 ########################################################################################

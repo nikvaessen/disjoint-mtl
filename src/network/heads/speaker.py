@@ -5,7 +5,7 @@
 # Author(s): Nik Vaessen
 ########################################################################################
 
-from typing import Union
+from typing import Union, Optional
 
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -51,20 +51,24 @@ class SpeakerRecognitionHead(t.nn.Module):
 class LinearProjectionHeadConfig(CastingConfig):
     # settings related to architecture
     use_projection_layer: bool
-    projection_layer_dim: int
+
+    # pooling method
+    pool_method: str
 
     # settings related to loss-function
     use_cosine_linear: bool  # set to true when using aam-softmax loss
 
-    # regularization settings
-    drop_prob: float
+    # amount of frames in embedding sequence to use while in train mode and pooling method is "mean_chunked.
+    mean_random_chunk_size: Optional[int] = None  # ~25 ms per frame.
 
-    # amount of frames in embedding sequence to use while in train mode.
-    enable_train_chunk: bool
-    train_random_chunk_size: int  # ~25 ms per frame. 40==1 second chunk size
+    # settings related to projection layer, if enabled
+    projection_layer_dim: Optional[int] = None
+    projection_layer_dim_drop_prob: Optional[float] = None
 
 
 class LinearProjectionHead(SpeakerRecognitionHead):
+    pool_methods = ["mean", "first", "mean_chunked"]
+
     def __init__(
         self,
         cfg: LinearProjectionHeadConfig,
@@ -74,6 +78,10 @@ class LinearProjectionHead(SpeakerRecognitionHead):
         super().__init__()
 
         self.cfg = cfg
+
+        if self.cfg.pool_method not in self.pool_methods:
+            raise ValueError(f"{self.cfg.pool_method} not int {self.pool_methods}")
+
         self._embedding_size = (
             self.cfg.projection_layer_dim
             if self.cfg.use_projection_layer
@@ -86,7 +94,7 @@ class LinearProjectionHead(SpeakerRecognitionHead):
                     in_features=representation_dim,
                     out_features=self.cfg.projection_layer_dim,
                 ),
-                t.nn.Dropout(p=self.cfg.drop_prob),
+                t.nn.Dropout(p=self.cfg.projection_layer_dim_drop_prob),
                 t.nn.LeakyReLU(),
             )
         else:
@@ -106,24 +114,48 @@ class LinearProjectionHead(SpeakerRecognitionHead):
     def compute_prediction(self, embedding: t.Tensor) -> t.Tensor:
         return self.classification_layer(embedding)
 
+    def pool_sequence(self, sequence: t.Tensor, dim: int = 1):
+        assert len(sequence.shape) == 3
+        assert 0 <= dim < 3
+
+        num_frames = sequence.shape[dim]
+
+        if self.cfg.pool_method == "mean" or self.cfg.pool_method == "mean_chunked":
+            if (
+                self.training
+                and self.cfg.pool_method == "mean_chunked"
+                and num_frames > self.cfg.train_random_chunk_size
+            ):
+                min_idx = 0
+                max_idx = num_frames - self.cfg.train_random_chunk_size - 1
+
+                start_idx = t.randint(low=min_idx, high=max_idx, size=())
+                stop_idx = start_idx + self.cfg.train_random_chunk_size
+
+                if dim == 0:
+                    sequence = sequence[start_idx:stop_idx, :, :]
+                elif dim == 1:
+                    sequence = sequence[:, start_idx:stop_idx, :]
+                else:
+                    sequence = sequence[:, :, start_idx:stop_idx]
+
+            embedding = t.mean(sequence, dim=dim)
+
+        elif self.cfg.pool_method == "first":
+            if dim == 0:
+                embedding = sequence[0, :, :]
+            elif dim == 1:
+                embedding = sequence[:, 0, :]
+            else:
+                embedding = sequence[:, :, 0]
+        else:
+            raise ValueError(f"unknown {self.cfg.pool_method=}")
+
+        return embedding
+
     def compute_embedding(self, sequence: t.Tensor) -> t.Tensor:
         projected_sequence = self.projection_layer(sequence)
-        num_frames = projected_sequence.shape[1]
-
-        if (
-            self.training
-            and self.cfg.enable_train_chunk
-            and num_frames > self.cfg.train_random_chunk_size
-        ):
-            min_idx = 0
-            max_idx = num_frames - self.cfg.train_random_chunk_size - 1
-
-            start_idx = t.randint(low=min_idx, high=max_idx, size=())
-            stop_idx = start_idx + self.cfg.train_random_chunk_size
-
-            embedding = t.mean(projected_sequence[:, start_idx:stop_idx, :], dim=1)
-        else:
-            embedding = t.mean(projected_sequence, dim=1)
+        embedding = self.pool_sequence(projected_sequence)
 
         return embedding
 
