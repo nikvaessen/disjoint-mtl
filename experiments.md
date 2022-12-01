@@ -126,3 +126,7 @@ python run_mtl_disjoint.py -m +experiments=mtl_vox2_ls optim.algo.lr=1e-4,5e-5,1
 network.speaker_head_cfg.pool_method=first data/module=mtl_disjoint_ls960h,mtl_disjoint_ls960h_vox2 \
 data.pipe.speaker.train_dp.chunk_size_sec=3,9 tag=exp2 hydra/launcher=slurm_24vram 
 ```
+
+### exp 3
+
+python run_mtl_disjoint.py -m +experiments=mtl_vox2_ls_dsi data.pipe.speaker.train_dp.chunk_size_sec=3 optim.loss.scale_method=dwa optim.algo.lr=5e-5 hydra/launcher=slurm_24vram tag=dsi network.dsi_head_alpha=1e-3,1e-4,1e-5 tag=exp3
