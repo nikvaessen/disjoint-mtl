@@ -41,6 +41,20 @@ class Wav2vec2ForSpeechRecognitionConfig:
     # head on top of wav2vec2 for speaker recognition
     head_cfg: SpeechHeadConfig
 
+    # reg settings
+    apply_spec_augment: bool = True
+
+    mask_time_prob: int = 0.05
+    mask_time_length: int = 10
+    mask_time_min_masks: int = 2
+    mask_feature_prob: float = 0
+    mask_feature_length: int = 10
+    mask_feature_min_masks: int = 0
+
+    hidden_dropout: int = 0.1
+    attention_dropout: int = 0.1
+    feat_proj_dropout: int = 0.1
+
 
 ########################################################################################
 # complete network
@@ -66,7 +80,19 @@ class Wav2vec2ForSpeechRecognition(SpeechRecognitionLightningModule):
         self.vocab_size = len(idx_to_char)
 
         self.wav2vec2: Wav2Vec2Model = Wav2Vec2Model.from_pretrained(
-            self.cfg.huggingface_id
+            self.cfg.huggingface_id,
+            **{
+                "apply_spec_augment": cfg.apply_spec_augment,
+                "mask_time_prob": cfg.mask_time_prob,
+                "mask_time_length": cfg.mask_time_length,
+                "mask_time_min_masks": cfg.mask_time_min_masks,
+                "mask_feature_prob": cfg.mask_feature_prob,
+                "mask_feature_length": cfg.mask_feature_length,
+                "mask_feature_min_masks": cfg.mask_feature_min_masks,
+                "hidden_dropout": cfg.hidden_dropout,
+                "attention_dropout": cfg.attention_dropout,
+                "feat_proj_dropout": cfg.feat_proj_dropout,
+            },
         )
 
         if self.cfg.use_gradient_checkpointing:

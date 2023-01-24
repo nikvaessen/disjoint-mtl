@@ -1,8 +1,7 @@
-_target_: src.network.wavlm.WavLMForSpeechRecognitionConfig
-
+_target_: src.network.wav2vec2.w2v2_speech.Wav2vec2ForSpeechRecognitionConfig
 
 # settings for wav2vec2 architecture
-huggingface_id: "microsoft/wavlm-base-plus"
+huggingface_id: "facebook/wav2vec2-base"
 reset_weights: false
 
 # freeze logic
@@ -22,3 +21,17 @@ head_cfg:
   blank_initial_bias: 10
   character_distribution_json: ${oc.env:LIBRISPEECH_DIR}/meta/character_distribution_train.json
   character_vocabulary_json: ${oc.env:LIBRISPEECH_DIR}/meta/character_vocabulary.json
+
+# regularisation settings
+apply_spec_augment: false
+
+mask_time_prob: 0
+mask_time_length: 10
+mask_time_min_masks: 2
+mask_feature_prob: 0
+mask_feature_length: 10
+mask_feature_min_masks: 0
+
+hidden_dropout: 0
+attention_dropout: 0
+feat_proj_dropout: 0
