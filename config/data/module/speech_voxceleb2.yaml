@@ -1,0 +1,28 @@
+_target_: src.data.module.SpeechRecognitionDataModuleConfig
+
+# name of dataset
+name: vox2
+
+# path to folder(s) containing train data
+train_shard_paths:
+  - ${oc.env:VOXCELEB_DIR}/shards/vox2_train
+
+# path to folder(s) containing val data
+val_shard_paths:
+  - ${oc.env:VOXCELEB_DIR}/shards/vox2_val
+
+# shard pattern
+shard_file_pattern: "*.*.tar*"
+
+# path to meta file for mapping vocabulary to predicton IDs
+char_vocab_json: ${oc.env:LIBRISPEECH_DIR}/meta/character_vocabulary.json
+
+# name of each test set
+test_names:
+  - ls_dev_clean
+  - ls_dev_other
+
+# path to each shard of test set (only 1 dir each)
+test_shards:
+  - ${oc.env:LIBRISPEECH_DIR}/shards/dev-clean
+  - ${oc.env:LIBRISPEECH_DIR}/shards/dev-other
