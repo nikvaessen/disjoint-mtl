@@ -18,6 +18,11 @@ speech:
     allow_partial_shards: true
     num_workers: 5
 
+    # filter on language_tags
+    language_tags:
+      - en
+
+
   val_dp:
     _target_: data_utility.pipe.builder.SpeechRecognitionDataPipeBuilderConfig
 
@@ -36,6 +41,10 @@ speech:
     # logic for giving each worker equal number of data
     allow_partial_shards: true
     num_workers: 1
+
+    # filter on language_tags
+    language_tags:
+      - en
 
   test_dp:
     _target_: data_utility.pipe.builder.SpeechRecognitionDataPipeBuilderConfig
@@ -56,3 +65,6 @@ speech:
     allow_partial_shards: true
     num_workers: 1
 
+    # filter on language_tags
+    language_tags:
+      - en
