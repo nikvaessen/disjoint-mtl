@@ -8,7 +8,7 @@ reset_weights: false
 freeze_cnn: true
 freeze_transformer: true  # this also freezes projector and rel. pos. emb
 num_steps_freeze_cnn: -1 # so always
-num_steps_freeze_transformer: 2_000
+num_steps_freeze_transformer: 3_000
 
 # if enabled, gradient checkpointing slows down iteration speed but saves memory
 use_gradient_checkpointing: true

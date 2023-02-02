@@ -17,7 +17,7 @@ mtl:
 
     # batching (one must be defined)
     max_tokens: 3_200_000
-    max_len: 320_000
+    max_len: 480_000
 
   val_dp:
     _target_: data_utility.pipe.builder.SpeechAndSpeakerRecognitionDataPipeBuilderConfig

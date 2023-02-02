@@ -1,12 +1,12 @@
 defaults:
   - _self_
-  - callbacks: speaker_default
+  - callbacks: speaker_early_stopping
   - data/module: speaker_voxceleb
   - data/pipe: speaker_datapipe
   - network: speaker_wav2vec2_linear
   - optim/algo: adam
-  - optim/schedule: constant
-  - optim/loss: cross_entropy
+  - optim/schedule: tri_stage
+  - optim/loss: aam_softmax
   - trainer: trainer_gpu
 
 # directory for slurm and hydra logs
@@ -28,7 +28,7 @@ load_network_from_checkpoint: null
 use_wandb: ${oc.decode:${oc.env:USE_WANDB}}
 
 # project name (useful for giving a name to log directories)
-project_name: disjoint-mtl-speaker
+project_name: 2023-speaker
 
 # experiment name
 # (:) indicates it needs to be resolved

@@ -12,10 +12,10 @@ speaker:
 
     # chunk
     chunk_strategy: random
-    chunk_size_sec: 3
+    chunk_size_sec: 2
 
     # batching
-    batch_size: 32
+    batch_size: 50
 
     # logic for giving each worker equal number of data
     allow_partial_shards: true
@@ -82,7 +82,7 @@ speech:
 
     # batching
     max_tokens: 1_600_000
-    max_len: 320_000
+    max_len: 480_000
 
     # logic for giving each worker equal number of data
     allow_partial_shards: true

@@ -22,7 +22,7 @@ max_epochs: null
 min_steps: null
 
 # maximum number of steps to train for
-max_steps: 20000
+max_steps: 200_000
 
 # due to training dataset having no length we need
 # to manually set the validation epoch interval

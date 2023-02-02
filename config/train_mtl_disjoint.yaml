@@ -1,12 +1,12 @@
 defaults:
   - _self_
-  - callbacks: mt_default
+  - callbacks: mt_early_stopping
   - data/module: mtl_disjoint_ls960h_vox2
   - data/pipe: mtl_disjoint_datapipe
   - network: mtl_disjoint_wav2vec2_linear
   - optim/algo: adam
   - optim/schedule: tri_stage
-  - optim/loss: mt_speech_speaker_loss
+  - optim/loss: mtl_static_equal
   - trainer: trainer_gpu
 
 # root directory with subfolders containing the canonical dataset(s)
@@ -34,7 +34,7 @@ use_wandb: ${oc.decode:${oc.env:USE_WANDB}}
 gpus: ${oc.decode:${oc.env:NUM_GPUS}}
 
 # project name (useful for giving a name to log directories)
-project_name: disjoint-mtl
+project_name: 2023-mtl-disjoint
 
 # experiment name
 # (:) indicates it needs to be resolved

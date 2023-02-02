@@ -49,22 +49,3 @@ early_stopping_speech:
   patience: 4
   mode: min
   check_finite: True
-
-# stop when model doesn't improve or diverges
-early_stopping_speech_diverge:
-  _target_: pytorch_lightning.callbacks.early_stopping.EarlyStopping
-  monitor: val_loss_speech_other
-  min_delta: 0.00
-  patience: 1_000_000 # disable monitoring val_loss_other for anything but divergence
-  mode: min
-  check_finite: True
-  divergence_threshold: 10
-
-# stop when val_eer doesn't improve or diverges
-early_stopping_speaker:
-  _target_: pytorch_lightning.callbacks.early_stopping.EarlyStopping
-  monitor: val_eer
-  min_delta: 0.00
-  patience: 4
-  mode: min
-  check_finite: True

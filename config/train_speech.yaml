@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - callbacks: speaker_default
+  - callbacks: speech_early_stopping
   - data/module: speech_librispeech_960h.yaml
   - data/pipe: speech_datapipe
   - network: speech_wav2vec2_linear
@@ -34,7 +34,7 @@ use_wandb: ${oc.decode:${oc.env:USE_WANDB}}
 gpus: ${oc.decode:${oc.env:NUM_GPUS}}
 
 # project name (useful for giving a name to log directories)
-project_name: disjoint-mtl-speech
+project_name: 2023-speech
 
 # experiment name
 # (:) indicates it needs to be resolved
