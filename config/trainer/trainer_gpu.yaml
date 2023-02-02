@@ -26,7 +26,7 @@ max_steps: 200_000
 
 # due to training dataset having no length we need
 # to manually set the validation epoch interval
-val_check_interval: 1000
+val_check_interval: 5000
 check_val_every_n_epoch: null
 
 # accumulating batches artificially increases
