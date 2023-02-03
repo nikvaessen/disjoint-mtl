@@ -31,9 +31,9 @@ wav2vec2 BASE, 1 fc for ASR, mean-pooling + 1 FC for SKR
 #### librispeech
 
 ```
-python run_speech \
+python run_speech.py -m \
 data/module=speech_ls960h \
-network=speech_wav2vec2_linear,speech_wav2vec2_linear_no_reg \ 
+network=speech_wav2vec2_linear,speech_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
 tag=asr_ls \
 hydra/launcher=slurm_24vram
@@ -42,9 +42,9 @@ hydra/launcher=slurm_24vram
 #### vox2
 
 ```
-python run_speech \
+python run_speech -m \
 data/module=speech_vox2 \
-network=speech_wav2vec2_linear,speech_wav2vec2_linear_no_reg \ 
+network=speech_wav2vec2_linear,speech_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
 tag=asr_vox \
 hydra/launcher=slurm_24vram
@@ -55,7 +55,7 @@ hydra/launcher=slurm_24vram
 #### librispeech
 
 ```
-python run_speaker \
+python run_speaker.py -m \
 data/module=speaker_ls960h \
 network=speaker_wav2vec2_linear,speaker_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
@@ -66,7 +66,7 @@ hydra/launcher=slurm_24vram
 #### vox2
 
 ```
-python run_speaker \
+python run_speaker.py -m \
 data/module=speaker_vox2 \
 network=speaker_wav2vec2_linear,speaker_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \

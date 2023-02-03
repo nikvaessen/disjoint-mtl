@@ -220,14 +220,14 @@ class DisjointMTLLightningModule(BaseLightningModule):
         self.metric_train_speech_weight = torchmetrics.MeanMetric()
         self.train_grad_dict = defaultdict(list)
 
-        self.metric_train_acc = torchmetrics.Accuracy()
+        self.metric_train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=self.num_speakers)
         self.metric_train_wer = torchmetrics.MeanMetric()
 
         self.metric_val_loss = torchmetrics.MeanMetric()
         self.metric_val_speech_loss = torchmetrics.MeanMetric()
         self.metric_val_speaker_loss = torchmetrics.MeanMetric()
 
-        self.metric_val_acc = torchmetrics.Accuracy()
+        self.metric_val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=self.num_speakers)
 
         self.automatic_optimization = False
 

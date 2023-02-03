@@ -51,9 +51,13 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
         self.test_names = test_names
 
         # used to keep track of training/val accuracy
-        self.metric_train_acc = torchmetrics.Accuracy()
+        self.metric_train_acc = torchmetrics.Accuracy(
+            task="multiclass", num_classes=self.num_speakers
+        )
         self.metric_train_loss = torchmetrics.MeanMetric()
-        self.metric_val_acc = torchmetrics.Accuracy()
+        self.metric_val_acc = torchmetrics.Accuracy(
+            task="multiclass", num_classes=self.num_speakers
+        )
 
         # evaluator
         self.evaluator = CosineDistanceEvaluator(
