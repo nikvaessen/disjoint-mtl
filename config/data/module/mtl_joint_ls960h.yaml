@@ -8,7 +8,6 @@ train_shard_paths:
   - ${oc.env:LIBRISPEECH_DIR}/shards/train-clean-100
   - ${oc.env:LIBRISPEECH_DIR}/shards/train-clean-360
   - ${oc.env:LIBRISPEECH_DIR}/shards/train-other-500
-  - ${oc.env:VOXCELEB_DIR}/shards/vox2_train
 
 # path to folder(s) containing val data
 val_shard_paths:

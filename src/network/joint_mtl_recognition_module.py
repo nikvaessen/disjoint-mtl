@@ -160,7 +160,6 @@ class JointMTLLightningModule(BaseLightningModule):
         ) = self.forward(batch.audio_tensor, batch.audio_num_frames)
 
         (
-            summed_loss,
             speech_loss_value,
             speaker_loss_value,
             speaker_prediction,
@@ -174,6 +173,7 @@ class JointMTLLightningModule(BaseLightningModule):
             speaker_logits=speaker_logits,
             speaker_labels=batch.id_tensor,
         )
+        summed_loss = speech_loss_value + speaker_loss_value
 
         # make logs
         with torch.no_grad():
@@ -307,7 +307,6 @@ class JointMTLLightningModule(BaseLightningModule):
         ) = self.forward(batch.audio_tensor, batch.audio_num_frames)
 
         (
-            summed_loss,
             speech_loss_value,
             speaker_loss_value,
             speaker_prediction,
@@ -321,6 +320,7 @@ class JointMTLLightningModule(BaseLightningModule):
             speaker_logits=speaker_logits,
             speaker_labels=batch.id_tensor,
         )
+        summed_loss = speech_loss_value + speaker_loss_value
 
         with torch.no_grad():
             predicted_transcriptions = decode_predictions_greedy(
