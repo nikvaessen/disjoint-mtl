@@ -82,7 +82,7 @@ speech:
 
     # batching
     max_tokens: 1_600_000
-    max_len: 480_000
+    max_len: 400_000
 
     # logic for giving each worker equal number of data
     allow_partial_shards: true
