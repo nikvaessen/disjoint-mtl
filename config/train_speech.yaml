@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - callbacks: speech_early_stopping
-  - data/module: speech_librispeech_960h.yaml
+  - data/module: speech_ls960h
   - data/pipe: speech_datapipe
   - network: speech_wav2vec2_linear
   - optim/algo: adam

@@ -31,13 +31,23 @@ wav2vec2 BASE, 1 fc for ASR, mean-pooling + 1 FC for SKR
 #### librispeech
 
 ```
-TODO
+python run_speech \
+data/module=speech_ls960h \
+network=speech_wav2vec2_linear,speech_wav2vec2_linear_no_reg \ 
+optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
+tag=asr_ls \
+hydra/launcher=slurm_24vram
 ```
 
 #### vox2
 
 ```
-TODO
+python run_speech \
+data/module=speech_vox2 \
+network=speech_wav2vec2_linear,speech_wav2vec2_linear_no_reg \ 
+optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
+tag=asr_vox \
+hydra/launcher=slurm_24vram
 ```
 
 ### SKR
@@ -45,13 +55,23 @@ TODO
 #### librispeech
 
 ```
-TODO
+python run_speaker \
+data/module=speaker_ls960h \
+network=speaker_wav2vec2_linear,speaker_wav2vec2_linear_no_reg \
+optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
+tag=skr_ls \
+hydra/launcher=slurm_24vram
 ```
 
 #### vox2
 
 ```
-TODO
+python run_speaker \
+data/module=speaker_vox2 \
+network=speaker_wav2vec2_linear,speaker_wav2vec2_linear_no_reg \
+optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
+tag=skr_vox \
+hydra/launcher=slurm_24vram
 ```
 
 ## MTL
@@ -61,45 +81,78 @@ TODO
 #### librispeech
 
 ```
-TODO
+python run_mtl_joint \
+data/module=mtl_joint_ls960h \
+network=mtl_joint_wav2vec2_linear,mtl_joint_wav2vec2_linear_no_reg \
+optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
+tag=mtl_j_ls \
+hydra/launcher=slurm_24vram
 ```
 
 #### librispeech + voxceleb
 
 ```
-TODO
+python run_mtl_joint \
+data/module=mtl_joint_ls960h_vox2 \
+network=mtl_joint_wav2vec2_linear,mtl_joint_wav2vec2_linear_no_reg \
+optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
+tag=mtl_j_ls_vox \
+hydra/launcher=slurm_24vram
 ```
 
-### disjoint, 3 seconds
+### disjoint, 2 seconds
 
 #### librispeech
 
 ```
-TODO
+python run_mtl_disjoint.py \
+data/module=mtl_disjoint_ls960h \
+network=mtl_disjoint_wav2vec2_linear,mtl_disjoint_wav2vec2_linear_no_reg \
+optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
+tag=mtl_dj_ls_vox \
+hydra/launcher=slurm_24vram
 ```
 
 #### librispeech + voxceleb
 
 ```
-TODO
+python run_mtl_disjoint.py \
+data/module=mtl_disjoint_ls960h_vox2 \
+network=mtl_disjoint_wav2vec2_linear,mtl_disjoint_wav2vec2_linear_no_reg \
+optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
+tag=mtl_dj_ls_vox \
+hydra/launcher=slurm_24vram
 ```
-### disjoint, 9 seconds
+
+### disjoint, 10 seconds
 
 #### librispeech
 
 ```
-TODO
+python run_mtl_disjoint.py \
+data/module=mtl_disjoint_ls960h \
+network=mtl_disjoint_wav2vec2_linear,mtl_disjoint_wav2vec2_linear_no_reg \
+data.pipe.speaker.train_dp.chunk_size_sec=10 \
+data.pipe.speaker.train_dp.batch_size=20 \
+optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
+tag=mtl_dj10_ls \
+hydra/launcher=slurm_24vram
 ```
 
 #### librispeech + voxceleb
 
 ```
-TODO
+python run_mtl_disjoint.py \
+data/module=mtl_disjoint_ls960h_vox2 \
+network=mtl_disjoint_wav2vec2_linear,mtl_disjoint_wav2vec2_linear_no_reg \
+data.pipe.speaker.train_dp.chunk_size_sec=10 \
+data.pipe.speaker.train_dp.batch_size=20 \
+optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
+tag=mtl_dj10_ls_vox \
+hydra/launcher=slurm_24vram
 ```
 
 # Table 2
-
-
 
 ## STL - 3 architectures
 data=vox2
