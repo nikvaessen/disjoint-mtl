@@ -28,22 +28,22 @@ ram_monitor:
 # save model checkpoint of weights with best validation performance
 checkpoint:
   _target_: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
-  monitor: val_wer
+  monitor: val_loss
   save_top_k: 1
   mode: min
-  filename: 'epoch_{epoch:04d}.step_{step:09d}.val-wer_{val_wer_clean:.4f}.best'
+  filename: 'epoch_{epoch:04d}.step_{step:09d}.val-loss_{val_loss:.10f}.best'
   save_last: true
   every_n_epochs: 1
   save_on_train_epoch_end: false
   auto_insert_metric_name: false
   save_weights_only: true
 
-last_checkpoint_pattern: 'epoch_{epoch:04d}.step_{step:09d}.val-wer_{val_wer_clean:.4f}.last'
+last_checkpoint_pattern: 'epoch_{epoch:04d}.step_{step:09d}.val-loss_{val_loss:.10f}.best'
 
 # stop when val_wer doesn't improve
 early_stopping_plateau:
   _target_: pytorch_lightning.callbacks.early_stopping.EarlyStopping
-  monitor: val_wer
+  monitor: val_loss
   min_delta: 0.00
   patience: 4
   mode: min

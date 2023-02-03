@@ -29,11 +29,11 @@ checkpoint:
   monitor: val_loss
   save_top_k: 1
   mode: min
-  filename: 'epoch_{epoch:04d}.step_{step:09d}.val-loss_{val_loss:.4f}.best'
+  filename: 'epoch_{epoch:04d}.step_{step:09d}.val-loss_{val_loss:.10f}.best'
   save_last: true
   every_n_epochs: 1
   save_on_train_epoch_end: false
   auto_insert_metric_name: false
   save_weights_only: true
 
-last_checkpoint_pattern: 'epoch_{epoch:04d}.step_{step:09d}.val-loss_{val_loss:.4f}.last'
+last_checkpoint_pattern: 'epoch_{epoch:04d}.step_{step:09d}.val-eer_{val_eer:.4f}.last'
