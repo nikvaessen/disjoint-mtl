@@ -81,18 +81,17 @@ hydra/launcher=slurm_24vram
 #### librispeech
 
 ```
-python run_mtl_joint \
+python run_mtl_joint.py -m \
 data/module=mtl_joint_ls960h \
-network=mtl_joint_wav2vec2_linear,mtl_joint_wav2vec2_linear_no_reg \
-optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
-tag=mtl_j_ls \
-hydra/launcher=slurm_24vram
+network=mtl_joint_wav2vec2_linear \
+optim.algo.lr=3e-5\
+tag=mtl_j_ls
 ```
 
 #### librispeech + voxceleb
 
 ```
-python run_mtl_joint \
+python run_mtl_joint.py -m \
 data/module=mtl_joint_ls960h_vox2 \
 network=mtl_joint_wav2vec2_linear,mtl_joint_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
@@ -105,7 +104,7 @@ hydra/launcher=slurm_24vram
 #### librispeech
 
 ```
-python run_mtl_disjoint.py \
+python run_mtl_disjoint.py -m \
 data/module=mtl_disjoint_ls960h \
 network=mtl_disjoint_wav2vec2_linear,mtl_disjoint_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
@@ -129,7 +128,7 @@ hydra/launcher=slurm_24vram
 #### librispeech
 
 ```
-python run_mtl_disjoint.py \
+python run_mtl_disjoint.py -m \
 data/module=mtl_disjoint_ls960h \
 network=mtl_disjoint_wav2vec2_linear,mtl_disjoint_wav2vec2_linear_no_reg \
 data.pipe.speaker.train_dp.chunk_size_sec=10 \
@@ -142,7 +141,7 @@ hydra/launcher=slurm_24vram
 #### librispeech + voxceleb
 
 ```
-python run_mtl_disjoint.py \
+python run_mtl_disjoint.py -m \
 data/module=mtl_disjoint_ls960h_vox2 \
 network=mtl_disjoint_wav2vec2_linear,mtl_disjoint_wav2vec2_linear_no_reg \
 data.pipe.speaker.train_dp.chunk_size_sec=10 \
