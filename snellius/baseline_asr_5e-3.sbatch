@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --array=0-3%2
+#SBATCH --array=0-3%4
 #SBATCH --cpus-per-task=16
 #SBATCH --error=/home/nvaessen/logs/%A_%a_0_log.err
 #SBATCH --gpus-per-node=1
