@@ -42,7 +42,7 @@ hydra/launcher=slurm_24vram
 #### vox2
 
 ```
-python run_speech -m \
+python run_speech.py -m \
 data/module=speech_vox2 \
 network=speech_wav2vec2_linear,speech_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
