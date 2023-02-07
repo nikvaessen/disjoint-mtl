@@ -56,3 +56,6 @@ hydra:
     subdir: ${experiment_name}
   job:
     chdir: true
+    env_copy:
+      - LOG_FOLDER
+
