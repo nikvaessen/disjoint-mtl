@@ -52,6 +52,9 @@ if __name__ == "__main__":
 
     env_var = os.environ
 
+    for e in env_var:
+        print(e)
+
     if "SLURM_ARRAY_TASK_ID" in env_var:
         import random
 
