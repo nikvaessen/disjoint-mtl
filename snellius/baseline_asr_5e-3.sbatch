@@ -2,7 +2,7 @@
 
 #SBATCH --array=0-3%2
 #SBATCH --cpus-per-task=16
-#SBATCH --error=/home/nvaessen/logs/%A_%a/%A_%a_0_log.err
+#SBATCH --error=/home/nvaessen/logs/%A_%a_0_log.err
 #SBATCH --gpus-per-node=1
 #SBATCH --job-name=run_speech
 #SBATCH --mail-type=BEGIN,END,FAIL
@@ -10,7 +10,7 @@
 #SBATCH --mem=120GB
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --output=/home/nvaessen/logs/%A_%a/%A_%a_0_log.out
+#SBATCH --output=/home/nvaessen/logs/%A_%a_0_log.out
 #SBATCH --partition=gpu
 #SBATCH --time=2880
 
