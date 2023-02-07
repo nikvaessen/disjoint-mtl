@@ -21,7 +21,6 @@ data/module=speech_ls960h \
 network=speech_wav2vec2_linear \
 optim.algo.lr=3e-5 \
 tag=asr_ls \
-hydra/launcher=slurm_24vram
 fi
 
 if [ "$SLURM_ARRAY_TASK_ID" = 1 ]
@@ -31,7 +30,6 @@ data/module=speech_ls960h \
 network=speech_wav2vec2_linear_no_reg \
 optim.algo.lr=3e-5 \
 tag=asr_ls \
-hydra/launcher=slurm_24vram
 fi
 
 if [ "$SLURM_ARRAY_TASK_ID" = 2 ]
@@ -41,7 +39,6 @@ data/module=speech_vox2 \
 network=speech_wav2vec2_linear \
 optim.algo.lr=3e-5 \
 tag=asr_vox \
-hydra/launcher=slurm_24vram
 fi
 
 if [ "$SLURM_ARRAY_TASK_ID" = 3 ]
@@ -51,5 +48,4 @@ data/module=speech_vox2 \
 network=speech_wav2vec2_linear_no_reg \
 optim.algo.lr=3e-5 \
 tag=asr_vox \
-hydra/launcher=slurm_24vram
 fi
