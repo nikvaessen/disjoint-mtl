@@ -17,3 +17,4 @@ exclude: null
 signal_delay_s: 120
 max_num_timeout: 0
 array_parallelism: 16
+additional_parameters: { "mail-user": "nvaessen", "mail-type": "BEGIN,END,FAIL" }
