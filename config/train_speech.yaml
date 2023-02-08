@@ -12,9 +12,6 @@ defaults:
 # root directory with subfolders containing the canonical dataset(s)
 data_folder: ${oc.env:DATA_FOLDER}
 
-# directory for slurm and hydra logs
-log_folder: ${oc.env:LOG_FOLDER}
-
 # random seed used by the experiment
 seed: 42133724
 
@@ -49,10 +46,10 @@ tag: null
 hydra:
   run:
     # set root output directory
-    dir: ${log_folder}/disjoint-mtl/run/${now:%Y-%m-%d_%H-%M-%S}/${experiment_name}
+    dir: logs/disjoint-mtl/run/${now:%Y-%m-%d_%H-%M-%S}/${experiment_name}
   sweep:
     # set root output directory
-    dir: ${log_folder}/disjoint-mtl/sweep/${now:%Y-%m-%d_%H-%M-%S}
+    dir: logs/disjoint-mtl/sweep/${now:%Y-%m-%d_%H-%M-%S}
     subdir: ${experiment_name}
   job:
     chdir: false
