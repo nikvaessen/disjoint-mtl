@@ -9,9 +9,6 @@ defaults:
   - optim/loss: ctc
   - trainer: trainer_gpu
 
-# root directory with subfolders containing the canonical dataset(s)
-data_folder: ${oc.env:DATA_FOLDER}
-
 # random seed used by the experiment
 seed: 42133724
 
