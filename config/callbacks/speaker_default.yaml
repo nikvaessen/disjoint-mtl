@@ -7,8 +7,8 @@ to_add:
 
 # progress bar
 pbar:
-  _target_: pytorch_lightning.callbacks.TQDMProgressBar
-  refresh_rate: 100
+  _target_: pytorch_lightning.callbacks.RichProgressBar
+  leave: true
 
 # model summary
 summary:
