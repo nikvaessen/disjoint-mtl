@@ -9,9 +9,6 @@ defaults:
   - optim/loss: mtl_static_equal
   - trainer: trainer_gpu
 
-# root directory with subfolders containing the canonical dataset(s)
-data_folder: ${oc.env:DATA_FOLDER}
-
 # directory for slurm and hydra logs
 log_folder: ${oc.env:LOG_FOLDER}
 
