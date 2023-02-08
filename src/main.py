@@ -440,7 +440,7 @@ def run_train_eval_script(cfg: DictConfig):
         job_id = os.environ["SLURM_JOB_ID"]
         task_id = os.environ["SLURM_ARRAY_TASK_ID"]
         print(f"detected slurm array job: {job_id}_{task_id}")
-    print(OmegaConf.to_yaml(cfg))
+    print(OmegaConf.to_yaml(cfg, resolve=True))
     print()
 
     # construct data module
