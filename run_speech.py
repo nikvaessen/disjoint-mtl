@@ -33,7 +33,7 @@ OmegaConf.register_new_resolver("random_name", random_experiment_id)
 # wrap around main hydra script
 
 
-@hydra.main(config_path="config", config_name="train_speech", version_base="1.2")
+@hydra.main(config_path="config", config_name="train_speech", version_base=None)
 def run(cfg: DictConfig):
     # we import here such that tab-completion in bash
     # does not need to import everything (which slows it down
