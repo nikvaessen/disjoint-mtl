@@ -47,13 +47,9 @@ def run(cfg: DictConfig):
 # execute hydra application
 
 if __name__ == "__main__":
-    print(f"searching for .env from {os.getcwd()} upwards")
     load_dotenv()
 
     env_var = os.environ
-
-    for e, v in env_var.items():
-        print(e, v)
 
     if "SLURM_ARRAY_TASK_ID" in env_var:
         import random

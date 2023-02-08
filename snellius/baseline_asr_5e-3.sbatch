@@ -16,36 +16,40 @@
 
 if [ "$SLURM_ARRAY_TASK_ID" = 0 ]
 then
-python run_speech.py -m \
+poetry run python run_speech.py -m \
 data/module=speech_ls960h \
 network=speech_wav2vec2_linear \
 optim.algo.lr=3e-5 \
-tag=asr_ls \
+data.pipe.speech.train_dp.num_workers=12 \
+tag=asr_ls
 fi
 
 if [ "$SLURM_ARRAY_TASK_ID" = 1 ]
 then
-python run_speech.py -m \
+poetry run python run_speech.py -m \
 data/module=speech_ls960h \
 network=speech_wav2vec2_linear_no_reg \
 optim.algo.lr=3e-5 \
-tag=asr_ls \
+data.pipe.speech.train_dp.num_workers=12 \
+tag=asr_ls
 fi
 
 if [ "$SLURM_ARRAY_TASK_ID" = 2 ]
 then
-python run_speech.py -m \
+poetry run python run_speech.py -m \
 data/module=speech_vox2 \
 network=speech_wav2vec2_linear \
 optim.algo.lr=3e-5 \
-tag=asr_vox \
+data.pipe.speech.train_dp.num_workers=12 \
+tag=asr_vox
 fi
 
 if [ "$SLURM_ARRAY_TASK_ID" = 3 ]
 then
-python run_speech.py -m \
+poetry run python run_speech.py -m \
 data/module=speech_vox2 \
 network=speech_wav2vec2_linear_no_reg \
 optim.algo.lr=3e-5 \
-tag=asr_vox \
+data.pipe.speech.train_dp.num_workers=12 \
+tag=asr_vox
 fi
