@@ -19,9 +19,4 @@ max_num_timeout: 0
 additional_parameters: { "mail-user": "nvaessen", "mail-type": "BEGIN,END,FAIL", "account": "das" }
 array_parallelism: 2
 setup:
-  - source export_env.sh
-  - SLEEP_TIME=${SLURM_ARRAY_TASK_ID:--1}
-  - SLEEP_TIME=$(($SLEEP_TIME + 1))
-  - SLEEP_TIME=$(($SLEEP_TIME * 3))
-  - echo "sleeping for $SLEEP_TIME seconds"
-  - sleep $SLEEP_TIME
+  - ./slurm_setup.sh
