@@ -139,7 +139,9 @@ class Wav2vec2ForJointMTL(JointMTLLightningModule):
                 for x in (
                     self.wav2vec2.feature_projection,
                     self.wav2vec2.encoder,
-                    self.wav2vec2.masked_spec_embed,
+                    self.wav2vec2.masked_spec_embed
+                    if hasattr(self.wav2vec2, "masked_spec_embed")
+                    else None,
                     self.wav2vec2.adapter,
                 )
                 if x is not None
