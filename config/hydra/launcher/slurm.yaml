@@ -11,12 +11,14 @@ mem_gb: 20
 nodes: 1
 name: ${hydra.job.name}
 partition: das
+account: das
+qos: das-large
 comment: null
 constraint: null
 exclude: null
 signal_delay_s: 120
 max_num_timeout: 0
-additional_parameters: { "mail-user": "nvaessen", "mail-type": "BEGIN,END,FAIL", "account": "das" }
-array_parallelism: 2
+additional_parameters: { "mail-user": "nvaessen", "mail-type": "BEGIN,END,FAIL" }
+array_parallelism: 8
 setup:
   - ./slurm_setup.sh
