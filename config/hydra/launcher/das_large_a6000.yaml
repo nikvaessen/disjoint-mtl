@@ -5,7 +5,7 @@ _target_: hydra_plugins.hydra_submitit_launcher.submitit_launcher.SlurmLauncher
 submitit_folder: ${hydra.sweep.dir}/.submitit/%j
 timeout_min: 2880
 cpus_per_task: 16
-gpus_per_node: ${trainer.devices}
+gres: gpu:rtx_a6000:${trainer.devices}
 tasks_per_node: 1
 mem_gb: 20
 nodes: 1
