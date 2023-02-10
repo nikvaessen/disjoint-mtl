@@ -49,3 +49,4 @@ early_stopping_speech:
   patience: 4
   mode: min
   check_finite: True
+  verbose: true

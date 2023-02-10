@@ -47,3 +47,4 @@ early_stopping:
   patience: 4
   mode: min
   check_finite: True
+  verbose: true
