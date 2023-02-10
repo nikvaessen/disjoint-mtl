@@ -187,18 +187,10 @@ class JointMTLLightningModule(BaseLightningModule):
             train_wer = calculate_wer(predicted_transcriptions, label_transcriptions)
 
             # speech
-            self._log_train_predictions(
-                batch,
-                batch_idx,
-                predicted_transcriptions,
-                label_transcriptions,
-                train_wer,
-            )
             self._log_train_wer(train_wer, batch_idx)
 
             # speaker
             self._log_train_acc(speaker_prediction, batch.id_tensor, batch_idx)
-            self._log_train_batch_info(batch)
 
             # loss
             self._log_train_loss(
@@ -206,15 +198,6 @@ class JointMTLLightningModule(BaseLightningModule):
             )
 
         return summed_loss
-
-    def _log_train_batch_info(self, batch):
-        with (pathlib.Path.cwd() / "train_batch_info.log").open("a") as f:
-            print(
-                f"{batch.batch_size=} "
-                f"{batch.audio_tensor.shape=} "
-                f"{batch.id_tensor.shape=}",
-                file=f,
-            )
 
     def _log_train_acc(self, prediction: t.Tensor, label: t.Tensor, batch_idx: int):
         self.metric_train_acc(prediction, label)
@@ -228,29 +211,6 @@ class JointMTLLightningModule(BaseLightningModule):
                 prog_bar=True,
             )
             self.metric_train_acc.reset()
-
-    def _log_train_predictions(
-        self,
-        batch,
-        batch_idx,
-        predicted_transcriptions,
-        label_transcriptions,
-        train_wer,
-    ):
-        if batch_idx % 5000 == 0:
-            with (pathlib.Path.cwd() / "train_predictions.log").open("a") as f:
-                for idx, (pred, gt) in enumerate(
-                    zip(predicted_transcriptions, label_transcriptions)
-                ):
-                    print(f"{idx:>3d}: {batch.keys[idx]}", file=f)
-                    print(f"{idx:>3d}: prediction=`{pred}`", file=f)
-                    print(f"{idx:>3d}:      label=`{gt}`", file=f)
-                print(
-                    f"{train_wer=}\n",
-                    end="\n\n",
-                    file=f,
-                    flush=True,
-                )
 
     def _log_train_wer(self, train_wer: float, batch_idx: int):
         self.metric_train_wer(train_wer)
@@ -332,16 +292,6 @@ class JointMTLLightningModule(BaseLightningModule):
 
             val_wer = calculate_wer(predicted_transcriptions, label_transcriptions)
 
-            # speech
-            self._log_val_predictions(
-                batch,
-                batch_idx,
-                predicted_transcriptions,
-                label_transcriptions,
-                val_wer,
-            )
-            self._log_val_batch_info(batch)
-
             # values
             self.metric_val_acc(speaker_prediction, batch.id_tensor)
             self.metric_val_loss(summed_loss)
@@ -372,38 +322,6 @@ class JointMTLLightningModule(BaseLightningModule):
         self.metric_val_speaker_loss.reset()
         self.metric_val_speech_loss.reset()
         self.metric_val_acc.reset()
-
-    def _log_val_batch_info(self, batch):
-        with (pathlib.Path.cwd() / "val_batch_info.log").open("a") as f:
-            print(
-                f"{batch.batch_size=} "
-                f"{batch.audio_tensor.shape=} "
-                f"{batch.id_tensor.shape=}",
-                file=f,
-            )
-
-    def _log_val_predictions(
-        self,
-        batch,
-        batch_idx,
-        predicted_transcriptions,
-        label_transcriptions,
-        train_wer,
-    ):
-        if batch_idx == 0:
-            with (pathlib.Path.cwd() / "val_predictions.log").open("a") as f:
-                for idx, (pred, gt) in enumerate(
-                    zip(predicted_transcriptions, label_transcriptions)
-                ):
-                    print(f"{idx:>3d}: {batch.keys[idx]}", file=f)
-                    print(f"{idx:>3d}: prediction=`{pred}`", file=f)
-                    print(f"{idx:>3d}:      label=`{gt}`", file=f)
-                print(
-                    f"{train_wer=}\n",
-                    end="\n\n",
-                    file=f,
-                    flush=True,
-                )
 
     def test_step(
         self,
