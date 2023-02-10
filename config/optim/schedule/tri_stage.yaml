@@ -6,8 +6,8 @@ scheduler:
   lr_lambda:
     _target_: src.optim.schedule.tri_stage.TriStageLearningRateLambdaLRFunction
     max_steps: ${trainer.max_steps}
-    warmup_stage_ratio: 0.05
-    constant_stage_ratio: 0.45
+    warmup_stage_ratio: 0.1
+    constant_stage_ratio: 0.4
     decay_stage_ratio: 0.5
     initial_lr: ${divide:${optim.algo.lr},100}
     base_lr: ${optim.algo.lr}
