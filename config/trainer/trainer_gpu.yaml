@@ -63,4 +63,4 @@ auto_lr_find: False
 
 # apply clipping to the global gradient norm to avoid exploding
 # gradients. Default value of '0' means no clipping is applied
-gradient_clip_val: 0
+gradient_clip_val: 1
