@@ -46,7 +46,7 @@ early_stopping_speech:
   _target_: pytorch_lightning.callbacks.early_stopping.EarlyStopping
   monitor: val_loss
   min_delta: 0.00
-  patience: 4
+  patience: 8
   mode: min
   check_finite: True
   verbose: true
