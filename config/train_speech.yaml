@@ -7,7 +7,7 @@ defaults:
   - optim/algo: adam
   - optim/schedule: tri_stage
   - optim/loss: ctc
-  - trainer: trainer_gpu
+  - trainer: trainer_gpu_clip
 
 # directory for slurm and hydra logs
 log_folder: ${oc.env:LOG_FOLDER}

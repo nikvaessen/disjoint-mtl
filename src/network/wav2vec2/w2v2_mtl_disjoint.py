@@ -41,7 +41,8 @@ class Wav2vec2ForDisjointMTLConfig:
 
     # opt settings (conflict-adverse grad descent)
     apply_ca_grad: bool
-    ca_grad_c: 0.5
+    ca_grad_c: float
+    grad_norm_value: float
 
     # settings for data source ID head
     apply_dsi_head: bool
@@ -113,6 +114,7 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
             ca_grad_c=cfg.ca_grad_c,
             apply_dsi_head=cfg.apply_dsi_head,
             dsi_head_alpha=cfg.dsi_head_alpha,
+            grad_norm_value=cfg.grad_norm_value,
         )
 
         self.vocab_size = len(idx_to_char)

@@ -28,13 +28,11 @@ speech_dm_cfg:
   test_names:
     - ls_dev_clean
     - ls_dev_other
-    - sw
 
   # path to each shard of test set (only 1 dir each)
   test_shards:
     - ${oc.env:LIBRISPEECH_DIR}/shards/dev-clean
     - ${oc.env:LIBRISPEECH_DIR}/shards/dev-other
-    - ${oc.env:SWITCHBOARD_DIR}/shards/test
 
 speaker_dm_cfg:
   _target_: src.data.module.SpeakerRecognitionDataModuleConfig
@@ -65,19 +63,16 @@ speaker_dm_cfg:
     - vox2_dev
     - ls_dev_clean
     - ls_dev_other
-    - sw
 
   # path to each shard of test set (only 1 dir each)
   test_shards:
     - ${oc.env:VOXCELEB_DIR}/shards/vox2_dev
     - ${oc.env:LIBRISPEECH_DIR}/shards/dev-clean
     - ${oc.env:LIBRISPEECH_DIR}/shards/dev-other
-    - ${oc.env:SWITCHBOARD_DIR}/shards/test
 
   # path to each trial list matching the test set
   test_trials:
     - ${oc.env:VOXCELEB_DIR}/meta/trials_dev.txt
     - ${oc.env:LIBRISPEECH_DIR}/meta/trials_dev_clean.txt
     - ${oc.env:LIBRISPEECH_DIR}/meta/trials_dev_other.txt
-    - ${oc.env:SWITCHBOARD_DIR}/meta/trials_eval.txt
 

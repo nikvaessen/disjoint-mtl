@@ -167,6 +167,7 @@ class DisjointMTLLightningModule(BaseLightningModule):
         ca_grad_c: float,
         apply_dsi_head: bool = False,
         dsi_head_alpha: float = 1,
+        grad_norm_value: float = None,
     ):
         super().__init__(hyperparameter_config, loss_fn_constructor)
 
@@ -194,6 +195,7 @@ class DisjointMTLLightningModule(BaseLightningModule):
         # opt settings
         self.apply_ca_grad = apply_ca_grad
         self.ca_grad_c = t.tensor(ca_grad_c)
+        self.grad_norm_value = grad_norm_value
 
         # whether to apply the data source identity reversal method
         self.apply_dsi_head = apply_dsi_head
@@ -220,14 +222,18 @@ class DisjointMTLLightningModule(BaseLightningModule):
         self.metric_train_speech_weight = torchmetrics.MeanMetric()
         self.train_grad_dict = defaultdict(list)
 
-        self.metric_train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=self.num_speakers)
+        self.metric_train_acc = torchmetrics.Accuracy(
+            task="multiclass", num_classes=self.num_speakers
+        )
         self.metric_train_wer = torchmetrics.MeanMetric()
 
         self.metric_val_loss = torchmetrics.MeanMetric()
         self.metric_val_speech_loss = torchmetrics.MeanMetric()
         self.metric_val_speaker_loss = torchmetrics.MeanMetric()
 
-        self.metric_val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=self.num_speakers)
+        self.metric_val_acc = torchmetrics.Accuracy(
+            task="multiclass", num_classes=self.num_speakers
+        )
 
         self.automatic_optimization = False
 
@@ -321,6 +327,9 @@ class DisjointMTLLightningModule(BaseLightningModule):
         return loss
 
     def grad2vec(self, set_grad_to_none=True):
+        if self.grad_norm_value is not None:
+            t.nn.utils.clip_grad_norm(self.parameters(), max_norm=self.grad_norm_value)
+
         with torch.no_grad():
             # extract all gradients from shared parameters and put them into a single vector
             reconstruction_dict = {}

@@ -16,6 +16,7 @@ use_gradient_checkpointing: true
 # opt settings (conflict-adverse grad descent)
 apply_ca_grad: false
 ca_grad_c: 0.5
+grad_norm_value: 1
 
 # settings for data source ID head
 apply_dsi_head: false

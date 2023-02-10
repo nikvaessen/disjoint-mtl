@@ -19,6 +19,10 @@ mtl:
     max_tokens: 3_200_000
     max_len: 400_000
 
+    # filter on language_tags
+    language_tags:
+      - en
+
   val_dp:
     _target_: data_utility.pipe.builder.SpeechAndSpeakerRecognitionDataPipeBuilderConfig
 
@@ -37,6 +41,10 @@ mtl:
 
     # batching (one must be defined)
     batch_size: 8
+
+    # filter on language_tags
+    language_tags:
+      - en
 
 
   test_dp:
@@ -58,4 +66,8 @@ mtl:
     allow_partial_shards: true
     num_workers: 1
     drop_last: false
+
+    # filter on language_tags
+    language_tags:
+      - en
 
