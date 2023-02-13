@@ -110,18 +110,8 @@ class SpeakerRecognitionLightningModule(BaseLightningModule):
 
         self._log_train_acc(prediction, spk_label, batch_idx)
         self._log_train_loss(loss, batch_idx)
-        self._log_train_batch_info(batch)
 
         return {"loss": loss}
-
-    def _log_train_batch_info(self, batch):
-        with (pathlib.Path.cwd() / "train_batch_info.log").open("a") as f:
-            print(
-                f"{batch.batch_size=} "
-                f"{batch.audio_tensor.shape=} "
-                f"{batch.id_tensor.shape=}",
-                file=f,
-            )
 
     def _log_train_acc(self, prediction: t.Tensor, label: t.Tensor, batch_idx: int):
         self.metric_train_acc(prediction, label)

@@ -9,7 +9,7 @@
 import logging
 import os
 
-from typing import List, Dict, Union, Callable
+from typing import List, Dict, Union, Callable, Any
 
 import torch as t
 import pytorch_lightning as pl
@@ -19,7 +19,7 @@ import wandb
 from omegaconf import DictConfig, OmegaConf, ListConfig
 from hydra.utils import instantiate
 from torch.distributed import destroy_process_group
-from pytorch_lightning import Callback
+from pytorch_lightning import Callback, LightningModule
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.plugins.environments import SLURMEnvironment
@@ -420,6 +420,18 @@ def construct_logger(cfg: DictConfig):
     return logger
 
 
+def maybe_watch_model(logger: Any, model: LightningModule):
+    if isinstance(logger, WandbLogger):
+        # log gradients, parameter histogram and model topology
+        logger.watch(model, log="all")
+
+
+def maybe_unwatch_model(logger: Any, model: LightningModule):
+    if isinstance(logger, WandbLogger):
+        if hasattr(logger, "experiment") and logger.experiment is not None:
+            logger.experiment.unwatch(model)
+
+
 ########################################################################################
 # implement the main function based on the whole config
 
@@ -466,7 +478,9 @@ def run_train_eval_script(cfg: DictConfig):
 
     # train model
     if cfg.fit_model:
+        maybe_watch_model(logger, network)
         trainer.fit(network, datamodule=dm)
+        maybe_unwatch_model(logger, network)
 
     # test model
     if cfg.trainer.accelerator == "ddp":
