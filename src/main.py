@@ -423,12 +423,14 @@ def construct_logger(cfg: DictConfig):
 def maybe_watch_model(logger: Any, model: LightningModule):
     if isinstance(logger, WandbLogger):
         # log gradients, parameter histogram and model topology
+        print("calling wandb.watch()")
         logger.watch(model, log="all")
 
 
 def maybe_unwatch_model(logger: Any, model: LightningModule):
     if isinstance(logger, WandbLogger):
         if hasattr(logger, "experiment") and logger.experiment is not None:
+            print("calling wandb.unwatch()")
             logger.experiment.unwatch(model)
 
 
