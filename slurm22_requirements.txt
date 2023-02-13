@@ -1,0 +1,2 @@
+python-dotenv>=0.21.0
+hydra-core>=1.2.0
