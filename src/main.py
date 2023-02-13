@@ -424,7 +424,7 @@ def maybe_watch_model(logger: Any, model: LightningModule):
     if isinstance(logger, WandbLogger):
         # log gradients, parameter histogram and model topology
         print("calling wandb.watch()")
-        logger.watch(model, log="all")
+        logger.watch(model, log="all", log_graph=False)
 
 
 def maybe_unwatch_model(logger: Any, model: LightningModule):
