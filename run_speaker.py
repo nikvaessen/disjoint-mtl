@@ -46,6 +46,16 @@ def run(cfg: DictConfig):
 ################################################################################
 # execute hydra application
 
+
+def verify_env():
+    required_variables = ["LOG_FOLDER", "LIBRISPEECH_DIR", "VOXCELEB_DIR"]
+
+    for v in required_variables:
+        if v not in os.environ:
+            raise ValueError(f"environment variable {v} is missing")
+
+
 if __name__ == "__main__":
     load_dotenv()
+    verify_env()
     run()

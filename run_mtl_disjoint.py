@@ -33,9 +33,7 @@ OmegaConf.register_new_resolver("random_name", random_experiment_id)
 # wrap around main hydra script
 
 
-@hydra.main(
-    config_path="config", config_name="train_mtl_disjoint", version_base="1.2"
-)
+@hydra.main(config_path="config", config_name="train_mtl_disjoint", version_base="1.2")
 def run(cfg: DictConfig):
     # we import here such that tab-completion in bash
     # does not need to import everything (which slows it down
@@ -51,6 +49,16 @@ def run(cfg: DictConfig):
 ################################################################################
 # execute hydra application
 
+
+def verify_env():
+    required_variables = ["LOG_FOLDER", "LIBRISPEECH_DIR", "VOXCELEB_DIR"]
+
+    for v in required_variables:
+        if v not in os.environ:
+            raise ValueError(f"environment variable {v} is missing")
+
+
 if __name__ == "__main__":
     load_dotenv()
+    verify_env()
     run()
