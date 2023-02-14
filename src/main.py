@@ -420,20 +420,6 @@ def construct_logger(cfg: DictConfig):
     return logger
 
 
-def maybe_watch_model(logger: Any, model: LightningModule):
-    if isinstance(logger, WandbLogger):
-        # log gradients, parameter histogram and model topology
-        print("calling wandb.watch()")
-        logger.watch(model, log="all", log_graph=False)
-
-
-def maybe_unwatch_model(logger: Any, model: LightningModule):
-    if isinstance(logger, WandbLogger):
-        if hasattr(logger, "experiment") and logger.experiment is not None:
-            print("calling wandb.unwatch()")
-            logger.experiment.unwatch(model)
-
-
 ########################################################################################
 # implement the main function based on the whole config
 
@@ -480,9 +466,7 @@ def run_train_eval_script(cfg: DictConfig):
 
     # train model
     if cfg.fit_model:
-        maybe_watch_model(logger, network)
         trainer.fit(network, datamodule=dm)
-        maybe_unwatch_model(logger, network)
 
     # test model
     if cfg.trainer.accelerator == "ddp":

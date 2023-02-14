@@ -1,6 +1,7 @@
 to_add:
   - lr_monitor
   - ram_monitor
+  - magnitude_monitor
   - checkpoint
   - pbar
   - summary
@@ -19,8 +20,14 @@ summary:
 lr_monitor:
   _target_: pytorch_lightning.callbacks.LearningRateMonitor
 
+# keep track of RAM usage
 ram_monitor:
   _target_: src.callbacks.memory_monitor.RamMemoryMonitor
+  frequency: 100
+
+# keep track of magnitudes of weights and gradients
+magnitude_monitor:
+  _target_: src.callbacks.magnitude_monitor.MagnitudeMonitor
   frequency: 100
 
 # save model checkpoint of weights with best validation performance
