@@ -12,7 +12,8 @@ speech:
 
     # batching
     max_tokens: 3_200_000
-    max_len: 400_000
+    max_audio_frames: 400_000 # maximum length of a possible sample
+    max_transcription_frames: 300  # maximum length of gt
 
     # logic for giving each worker equal number of data
     allow_partial_shards: true

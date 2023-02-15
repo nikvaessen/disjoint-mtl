@@ -17,7 +17,8 @@ mtl:
 
     # batching (one must be defined)
     max_tokens: 3_200_000
-    max_len: 400_000
+    max_audio_frames: 400_000 # maximum length of a possible sample
+    max_transcription_frames: 300  # maximum length of gt
 
     # filter on language_tags
     language_tags:
