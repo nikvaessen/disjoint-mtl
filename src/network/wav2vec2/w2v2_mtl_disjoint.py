@@ -147,6 +147,7 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
             self.cfg.speaker_head_cfg,
             representation_dim=self.embedding_size,
             classification_dim=self.num_speakers,
+            loss_fn=self.loss_fn,
         )
 
         # freeze logic

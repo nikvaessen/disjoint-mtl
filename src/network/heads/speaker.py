@@ -16,6 +16,7 @@ import speechbrain.lobes.models.Xvector as xvector
 import torch as t
 
 from src.layers.cosine_linear import CosineLinear
+from src.optim.loss import AngularAdditiveMarginSoftMaxLoss, MTSpeechAndSpeakerLoss
 from src.util.config_util import CastingConfig
 
 ########################################################################################
@@ -267,8 +268,22 @@ SpeakerHeadConfig = Union[LinearProjectionHeadConfig, XvectorHeadConfig, EcapaTd
 
 
 def construct_speaker_head(
-    cfg: SpeakerHeadConfig, representation_dim: int, classification_dim: int
+    cfg: SpeakerHeadConfig,
+    representation_dim: int,
+    classification_dim: int,
+    loss_fn: object,
 ) -> SpeakerRecognitionHead:
+    if isinstance(loss_fn, MTSpeechAndSpeakerLoss):
+        loss_fn = loss_fn.speaker_loss
+
+    is_aam = isinstance(loss_fn, AngularAdditiveMarginSoftMaxLoss)
+    is_cosine = cfg.use_cosine_linear
+
+    if not (is_cosine and is_aam):
+        raise ValueError(
+            "Cosine linear layer requires AAM softmax loss, and vice versa"
+        )
+
     if isinstance(cfg, LinearProjectionHeadConfig):
         return LinearProjectionHead(
             cfg,

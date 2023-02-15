@@ -17,6 +17,7 @@ from transformers import Wav2Vec2Model
 from data_utility.eval.speaker.evaluator import SpeakerTrial
 from src.network.heads import SpeakerHeadConfig, construct_speaker_head
 from src.network.speaker_recognition_module import SpeakerRecognitionLightningModule
+from src.optim.loss import AngularAdditiveMarginSoftMaxLoss
 from src.util.freeze import FreezeManager
 
 
@@ -96,6 +97,7 @@ class Wav2vec2ForSpeakerRecognition(SpeakerRecognitionLightningModule):
                 "feat_proj_dropout": cfg.feat_proj_dropout,
             },
         )
+
         if self.cfg.use_gradient_checkpointing:
             self.wav2vec2.gradient_checkpointing_enable()
 
@@ -110,6 +112,7 @@ class Wav2vec2ForSpeakerRecognition(SpeakerRecognitionLightningModule):
             self.cfg.head_cfg,
             representation_dim=self.embedding_size,
             classification_dim=self.num_speakers,
+            loss_fn=self.loss_fn,
         )
 
         # freeze logic

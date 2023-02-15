@@ -24,7 +24,7 @@ speaker_head_cfg:
   pool_method: mean
 
   # settings related to loss-function
-  use_cosine_linear: false  # set to true when using aam-softmax loss
+  use_cosine_linear: true  # set to true when using aam-softmax loss
 
   # amount of frames in embedding sequence to use while in train mode and pooling method is "mean_chunked.
   mean_random_chunk_size: null  # ~25 ms per frame.

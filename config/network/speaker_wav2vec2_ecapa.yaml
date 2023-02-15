@@ -18,4 +18,4 @@ head_cfg:
   _target_: src.network.heads.EcapaTdnnHeadConfig
 
   # settings related to loss-function
-  use_cosine_linear: false  # set to true when using aam-softmax loss
+  use_cosine_linear: true  # set to true when using aam-softmax loss
