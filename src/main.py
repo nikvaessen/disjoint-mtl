@@ -11,6 +11,7 @@ import os
 
 from typing import List, Dict, Union, Callable, Any
 
+import torch
 import torch as t
 import pytorch_lightning as pl
 import transformers
@@ -430,6 +431,7 @@ def run_train_eval_script(cfg: DictConfig):
 
     # set random seed for main script and workers
     pl.seed_everything(cfg.seed, workers=True)
+    torch.set_float32_matmul_precision("medium")
 
     # print config
     print(f"current git commit hash: {get_git_revision_hash()}")
