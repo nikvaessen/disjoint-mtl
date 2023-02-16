@@ -42,7 +42,7 @@ speaker:
 
     # batching
     max_tokens: 3_200_000
-    max_len: 400_000
+    max_audio_frames: 400_000
 
     # logic for giving each worker equal number of data
     allow_partial_shards: true

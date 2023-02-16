@@ -23,7 +23,7 @@ shard_file_pattern: "*.*.tar*"
 char_vocab_json: ${oc.env:LIBRISPEECH_DIR}/meta/character_vocabulary.json
 
 # path to meta file for speaker info (ID for train and val)
-speaker_json: ${oc.env:LIBRISPEECH_DIR}/meta/speakers_train.json
+speaker_json: ${oc.env:LIBRISPEECH_DIR}/meta/vox2_ls960h_speakers.json
 
 # name of each test set
 test_names:
