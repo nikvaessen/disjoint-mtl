@@ -54,6 +54,9 @@ class JointMTLDataModuleConfig(CastingConfig):
     # path to each trial list matching the test set
     test_trials: List[pathlib.Path]
 
+    # whether the datapipe should ignore the language tags for this eval set
+    test_ignore_language_tags: List[bool]
+
 
 ########################################################################################
 # implementation
@@ -162,9 +165,11 @@ class JointMTLDataModule(LightningDataModule):
         # test dp
         self.test_dp_list = [
             self.test_dpb.get_pipe(
-                shard_dirs=path, shard_file_pattern=self.cfg.shard_file_pattern
+                shard_dirs=path,
+                shard_file_pattern=self.cfg.shard_file_pattern,
+                ignore_language_tag_filter=self.cfg.test_ignore_language_tags[idx],
             )
-            for path in self.cfg.test_shards
+            for idx, path in enumerate(self.cfg.test_shards)
         ]
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:

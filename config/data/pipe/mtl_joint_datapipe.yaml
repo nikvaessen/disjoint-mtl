@@ -47,7 +47,6 @@ mtl:
     language_tags:
       - en
 
-
   test_dp:
     _target_: data_utility.pipe.builder.SpeechAndSpeakerRecognitionDataPipeBuilderConfig
 
@@ -58,7 +57,6 @@ mtl:
     shuffle_buffer_before: 500
     shuffle_buffer_after: 10
     bucket_buffer: 15
-
 
     # batching
     batch_size: 1

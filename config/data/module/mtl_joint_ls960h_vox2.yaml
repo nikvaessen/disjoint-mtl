@@ -42,3 +42,8 @@ test_trials:
   - ${oc.env:VOXCELEB_DIR}/meta/trials_dev.txt
   - ${oc.env:LIBRISPEECH_DIR}/meta/trials_dev_clean.txt
   - ${oc.env:LIBRISPEECH_DIR}/meta/trials_dev_other.txt
+
+test_ignore_language_tags:
+  - true
+  - false
+  - false
