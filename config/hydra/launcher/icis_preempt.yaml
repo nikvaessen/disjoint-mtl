@@ -5,7 +5,7 @@ submitit_folder: ${hydra.sweep.dir}/.submitit/%j
 
 qos: icis-preempt
 account: icis
-partition: icis,icis-prio
+partition: icis
 exclude: null
 
 timeout_min: 2880
