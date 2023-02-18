@@ -1,24 +1,26 @@
 # @package hydra.launcher
 
 _target_: hydra_plugins.hydra_submitit_launcher.submitit_launcher.SlurmLauncher
-
 submitit_folder: ${hydra.sweep.dir}/.submitit/%j
+
+qos: icis-preempt
+account: icis
+partition: icis,icis-prio
+exclude: null
+
 timeout_min: 2880
-cpus_per_task: 16
+array_parallelism: 8
+
 gres: gpu:${trainer.devices}
-tasks_per_node: 1
+cpus_per_task: 16
 mem_gb: 20
+
+tasks_per_node: 1
 nodes: 1
 name: ${hydra.job.name}
-partition: das
-account: das
-qos: das-large
-comment: null
-constraint: null
-exclude: null
 signal_delay_s: 120
 max_num_timeout: 0
+
 additional_parameters: { "mail-user": "nvaessen", "mail-type": "BEGIN,END,FAIL" }
-array_parallelism: 8
 setup:
   - ./slurm_setup.sh

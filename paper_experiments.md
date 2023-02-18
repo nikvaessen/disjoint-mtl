@@ -31,7 +31,7 @@ wav2vec2 BASE, 1 fc for ASR, mean-pooling + 1 FC for SKR
 #### librispeech
 
 ```
-python run_speech.py -m \
+poetry run python run_speech.py -m \
 data/module=speech_ls960h \
 network=speech_wav2vec2_linear,speech_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
@@ -43,7 +43,7 @@ hydra/launcher=slurm_snellius
 #### vox2
 
 ```
-python run_speech.py -m \
+poetry run python run_speech.py -m \
 data/module=speech_vox2 \
 network=speech_wav2vec2_linear,speech_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
@@ -57,7 +57,7 @@ hydra/launcher=slurm_snellius
 #### librispeech
 
 ```
-python run_speaker.py -m \
+poetry run python run_speaker.py -m \
 data/module=speaker_ls960h \
 network=speaker_wav2vec2_linear,speaker_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
@@ -69,7 +69,7 @@ hydra/launcher=slurm_snellius
 #### vox2
 
 ```
-python run_speaker.py -m \
+poetry run python run_speaker.py -m \
 data/module=speaker_vox2 \
 network=speaker_wav2vec2_linear,speaker_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
@@ -85,7 +85,7 @@ hydra/launcher=slurm_snellius
 #### librispeech
 
 ```
-python run_mtl_joint.py -m \
+poetry run python run_mtl_joint.py -m \
 data/module=mtl_joint_ls960h \
 network=mtl_joint_wav2vec2_linear,mtl_joint_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
@@ -96,7 +96,7 @@ hydra/launcher=slurm_snellius
 #### librispeech + voxceleb
 
 ```
-python run_mtl_joint.py -m \
+poetry run python run_mtl_joint.py -m \
 data/module=mtl_joint_ls960h_vox2 \
 network=mtl_joint_wav2vec2_linear,mtl_joint_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
@@ -109,7 +109,7 @@ hydra/launcher=slurm_snellius
 #### librispeech
 
 ```
-python run_mtl_disjoint.py -m \
+poetry run python run_mtl_disjoint.py -m \
 data/module=mtl_disjoint_ls960h \
 network=mtl_disjoint_wav2vec2_linear,mtl_disjoint_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
@@ -120,7 +120,7 @@ hydra/launcher=slurm_snellius
 #### librispeech + voxceleb
 
 ```
-python run_mtl_disjoint.py -m \
+poetry run python run_mtl_disjoint.py -m \
 data/module=mtl_disjoint_ls960h_vox2 \
 network=mtl_disjoint_wav2vec2_linear,mtl_disjoint_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
@@ -133,7 +133,7 @@ hydra/launcher=slurm_snellius
 #### librispeech
 
 ```
-python run_mtl_disjoint.py -m \
+poetry run python run_mtl_disjoint.py -m \
 data/module=mtl_disjoint_ls960h \
 network=mtl_disjoint_wav2vec2_linear,mtl_disjoint_wav2vec2_linear_no_reg \
 data.pipe.speaker.train_dp.chunk_size_sec=10 \
@@ -146,7 +146,7 @@ hydra/launcher=slurm_snellius
 #### librispeech + voxceleb
 
 ```
-python run_mtl_disjoint.py -m \
+poetry run python run_mtl_disjoint.py -m \
 data/module=mtl_disjoint_ls960h_vox2 \
 network=mtl_disjoint_wav2vec2_linear,mtl_disjoint_wav2vec2_linear_no_reg \
 data.pipe.speaker.train_dp.chunk_size_sec=10 \
