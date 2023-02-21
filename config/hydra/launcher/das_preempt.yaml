@@ -12,7 +12,7 @@ timeout_min: 2880
 array_parallelism: 8
 
 gres: gpu:${trainer.devices}
-cpus_per_task: 14
+cpus_per_task: 16
 mem_gb: 20
 
 tasks_per_node: 1

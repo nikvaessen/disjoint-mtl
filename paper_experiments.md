@@ -63,7 +63,7 @@ network=speaker_wav2vec2_linear,speaker_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
 tag=skr_ls \
 data.pipe.speaker.train_dp.num_workers=12 \
-hydra/launcher=slurm_snellius
+hydra/launcher=das_preempt
 ```
 
 #### vox2
@@ -75,7 +75,7 @@ network=speaker_wav2vec2_linear,speaker_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
 tag=skr_vox \
 data.pipe.speaker.train_dp.num_workers=12 \
-hydra/launcher=slurm_snellius
+hydra/launcher=das_preempt
 ```
 
 ## MTL
@@ -90,7 +90,7 @@ data/module=mtl_joint_ls960h \
 network=mtl_joint_wav2vec2_linear,mtl_joint_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
 tag=mtl_j_ls \
-hydra/launcher=slurm_snellius
+hydra/launcher=icis_preempt
 ```
 
 #### librispeech + voxceleb
@@ -101,7 +101,7 @@ data/module=mtl_joint_ls960h_vox2 \
 network=mtl_joint_wav2vec2_linear,mtl_joint_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
 tag=mtl_j_ls_vox \
-hydra/launcher=slurm_snellius
+hydra/launcher=icis_preempt
 ```
 
 ### disjoint, 2 seconds
@@ -114,7 +114,7 @@ data/module=mtl_disjoint_ls960h \
 network=mtl_disjoint_wav2vec2_linear,mtl_disjoint_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
 tag=mtl_dj_ls_vox \
-hydra/launcher=slurm_snellius
+hydra/launcher=icis_preempt
 ```
 
 #### librispeech + voxceleb
@@ -125,7 +125,7 @@ data/module=mtl_disjoint_ls960h_vox2 \
 network=mtl_disjoint_wav2vec2_linear,mtl_disjoint_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
 tag=mtl_dj_ls_vox \
-hydra/launcher=slurm_snellius
+hydra/launcher=icis_preempt
 ```
 
 ### disjoint, 10 seconds
@@ -140,7 +140,7 @@ data.pipe.speaker.train_dp.chunk_size_sec=10 \
 data.pipe.speaker.train_dp.batch_size=20 \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
 tag=mtl_dj10_ls \
-hydra/launcher=slurm_snellius
+hydra/launcher=icis_preempt
 ```
 
 #### librispeech + voxceleb
@@ -153,7 +153,7 @@ data.pipe.speaker.train_dp.chunk_size_sec=10 \
 data.pipe.speaker.train_dp.batch_size=20 \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
 tag=mtl_dj10_ls_vox \
-hydra/launcher=slurm_snellius
+hydra/launcher=icis_preempt
 ```
 
 # Table 2
