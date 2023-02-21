@@ -87,7 +87,7 @@ hydra/launcher=das_preempt
 ```
 poetry run python run_mtl_joint.py -m \
 data/module=mtl_joint_ls960h \
-network=mtl_joint_wav2vec2_linear,mtl_joint_wav2vec2_linear_no_reg \
+network=mtl_joint_wav2vecf2_linear,mtl_joint_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
 tag=mtl_j_ls \
 hydra/launcher=icis_preempt
