@@ -113,7 +113,7 @@ poetry run python run_mtl_disjoint.py -m \
 data/module=mtl_disjoint_ls960h \
 network=mtl_disjoint_wav2vec2_linear,mtl_disjoint_wav2vec2_linear_no_reg \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
-tag=mtl_dj_ls_vox \
+tag=mtl_dj_ls \
 hydra/launcher=icis_preempt
 ```
 
