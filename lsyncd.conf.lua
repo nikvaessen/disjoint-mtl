@@ -6,10 +6,10 @@ settings {
 
 sync {
    default.rsyncssh,
-   source       ="/home/nik/phd/repo/name",
-   host         ="nvaessen@cn99.science.ru.nl",
+   source       ="/home/nik/phd/repo/disjoint_mtl",
+   host         ="nvaessen@cn84.science.ru.nl",
    excludeFrom  =".gitignore",
-   targetdir    ="/home/nvaessen/remote/repo/name",
+   targetdir    ="/home/nvaessen/dev/disjoint_mtl",
    delay        = 0,
    rsync = {
      archive    = true,
