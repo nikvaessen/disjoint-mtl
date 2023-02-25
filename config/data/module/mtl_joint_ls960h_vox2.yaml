@@ -1,7 +1,7 @@
 _target_: src.data.module.JointMTLDataModuleConfig
 
 # name of dataset
-name: ls960h
+name: vox2+ls960h
 
 # path to folder(s) containing train data
 train_shard_paths:
