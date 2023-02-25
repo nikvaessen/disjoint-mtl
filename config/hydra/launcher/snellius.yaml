@@ -3,8 +3,6 @@
 _target_: hydra_plugins.hydra_submitit_launcher.submitit_launcher.SlurmLauncher
 submitit_folder: ${hydra.sweep.dir}/.submitit/%j
 
-qos: das-preempt
-account: das
 partition: gpu
 exclude: null
 
