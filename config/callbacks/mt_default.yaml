@@ -43,4 +43,4 @@ checkpoint:
   auto_insert_metric_name: false
   save_weights_only: true
 
-last_checkpoint_pattern: 'epoch_{epoch:04d}.step_{step:09d}.val-loss_{val_loss:.10f}.best'
+last_checkpoint_pattern: 'epoch_{epoch:04d}.step_{step:09d}.val-loss_{val_loss:.10f}.last'
