@@ -100,9 +100,9 @@ speech:
     tar_read_mode: 'r'  # depends on compression or not
 
     # parameters determining randomness
-    shuffle_buffer_before: 500
-    shuffle_buffer_after: 10
-    bucket_buffer: 15
+    shuffle_buffer_before: 1
+    shuffle_buffer_after: 1
+    bucket_buffer: null
 
     # batching
     batch_size: 8
