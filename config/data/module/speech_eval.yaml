@@ -1,7 +1,7 @@
 _target_: src.data.module.SpeechRecognitionDataModuleConfig
 
 # name of dataset
-name: ls960h
+name: eval
 
 # path to folder(s) containing train data
 train_shard_paths:
