@@ -69,14 +69,14 @@ speaker_dm_cfg:
 
   # path to each shard of test set (only 1 dir each)
   test_shards:
-    - ${oc.env:VOX2_DIR}/shards/vox1_test_o
-    - ${oc.env:VOX2_DIR}/shards/vox1_test_h
+    - ${oc.env:VOXCELEB_DIR}/shards/vox1_test_o
+    - ${oc.env:VOXCELEB_DIR}/shards/vox1_test_h
     - ${oc.env:LIBRISPEECH_DIR}/shards/test-other
     - ${oc.env:SRE_2008_DIR}/shards
 
   # path to each trial list matching the test set
   test_trials:
-    - ${oc.env:VOX2_DIR}/meta/veri_test2.txt
-    - ${oc.env:VOX2_DIR}/meta/list_test_hard2.txt
+    - ${oc.env:VOXCELEB_DIR}/meta/veri_test2.txt
+    - ${oc.env:VOXCELEB_DIR}/meta/list_test_hard2.txt
     - ${oc.env:LIBRISPEECH_DIR}/meta/trials_test_other.txt
     - ${oc.env:SRE_2008_DIR}/meta/trials.txt
