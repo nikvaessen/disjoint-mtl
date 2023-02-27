@@ -30,6 +30,8 @@ wav2vec2 BASE, 1 fc for ASR, mean-pooling + 1 FC for SKR
 
 #### librispeech
 
+train
+
 ```
 poetry run python run_speech.py -m \
 data/module=speech_ls960h \
@@ -40,8 +42,21 @@ data.pipe.speech.train_dp.num_workers=12 \
 hydra/launcher=das_preempt
 ```
 
+eval
+
+```
+poetry run python run_speech.py -m \
+data/module=speech_eval \
+network=speech_wav2vec2_linear
+fit_model=False \
+load_network_from_checkpoint=./models/stl_asr_ls_social-benches-7.ckpt \
+tag=eval \
+hydra/launcher=das_preempt
+```
+
 #### vox2
 
+train
 ```
 poetry run python run_speech.py -m \
 data/module=speech_vox2 \
@@ -52,10 +67,22 @@ data.pipe.speech.train_dp.num_workers=12 \
 hydra/launcher=das_preempt
 ```
 
+eval
+```
+poetry run python run_speech.py -m \
+data/module=speech_eval \
+network=speech_wav2vec2_linear
+fit_model=False \
+load_network_from_checkpoint=./models/stl_asr_v2_surrounding-symptons-5.ckpt \
+tag=eval \
+hydra/launcher=das_preempt
+```
+
 ### SKR
 
 #### librispeech
 
+train
 ```
 poetry run python run_speaker.py -m \
 data/module=speaker_ls960h \
@@ -66,8 +93,22 @@ data.pipe.speaker.train_dp.num_workers=12 \
 hydra/launcher=das_preempt
 ```
 
+eval
+```
+poetry run python run_speaker.py -m \
+data/module=speaker_eval \
+network=speaker_wav2vec2_linear \
+fit_model=False \
+load_network_from_checkpoint=./models/stl_skr_ls_damaging-readers-7.ckpt \
+data.pipe.speaker.test_dp.chunk_strategy=start \
+data.pipe.speaker.test_dp.chunk_size_sec=2,10,2_000_000_000 \
+tag=eval \
+hydra/launcher=das_preempt
+```
+
 #### vox2
 
+train
 ```
 poetry run python run_speaker.py -m \
 data/module=speaker_vox2 \
@@ -78,12 +119,26 @@ data.pipe.speaker.train_dp.num_workers=12 \
 hydra/launcher=das_preempt
 ```
 
+eval
+```
+poetry run python run_speaker.py -m \
+data/module=speaker_eval \
+network=speaker_wav2vec2_linear \
+fit_model=False \
+load_network_from_checkpoint=./models/stl_skr_v2_explicit-rhythms-6.ckpt \
+data.pipe.speaker.test_dp.chunk_strategy=start \
+data.pipe.speaker.test_dp.chunk_size_sec=2,10,2_000_000_000 \
+tag=eval \
+hydra/launcher=das_preempt
+```
+
 ## MTL
 
 ### joint
 
 #### librispeech
 
+train
 ```
 poetry run python run_mtl_joint.py -m \
 data/module=mtl_joint_ls960h \
@@ -93,8 +148,22 @@ tag=mtl_j_ls \
 hydra/launcher=icis_preempt
 ```
 
+eval
+```
+poetry run python run_mtl_disjoint.py -m \
+data/module=mtl_disjoint_eval \
+network=mtl_disjoint_wav2vec2_linear \
+fit_model=False \
+load_network_from_checkpoint=./models/mtl_joint_ls_angry-attendances-7.ckpt \
+data.pipe.speaker.test_dp.chunk_strategy=start \
+data.pipe.speaker.test_dp.chunk_size_sec=2,10,2_000_000_000 \
+tag=eval \
+hydra/launcher=icis_preempt
+```
+
 #### librispeech + voxceleb
 
+train
 ```
 poetry run python run_mtl_joint.py -m \
 data/module=mtl_joint_ls960h_vox2 \
@@ -104,10 +173,24 @@ tag=mtl_j_ls_vox \
 hydra/launcher=icis_preempt
 ```
 
+eval
+```
+poetry run python run_mtl_disjoint.py -m \
+data/module=mtl_disjoint_eval \
+network=mtl_disjoint_wav2vec2_linear \
+fit_model=False \
+load_network_from_checkpoint=./models/mtl_joint_ls+v2_normal-buses-9.ckpt \
+data.pipe.speaker.test_dp.chunk_strategy=start \
+data.pipe.speaker.test_dp.chunk_size_sec=2,10,2_000_000_000 \
+tag=eval \
+hydra/launcher=icis_preempt
+```
+
 ### disjoint, 2 seconds
 
 #### librispeech
 
+train
 ```
 poetry run python run_mtl_disjoint.py -m \
 data/module=mtl_disjoint_ls960h \
@@ -117,8 +200,23 @@ tag=mtl_dj_ls \
 hydra/launcher=icis_preempt
 ```
 
+eval
+```
+poetry run python run_mtl_disjoint.py -m \
+data/module=mtl_disjoint_eval \
+network=mtl_disjoint_wav2vec2_linear \
+fit_model=False \
+load_network_from_checkpoint=./models/mtl_dj_2s_ls_small-opposites-0.ckpt \
+data.pipe.speaker.test_dp.chunk_strategy=start \
+data.pipe.speaker.test_dp.chunk_size_sec=2,10,2_000_000_000 \
+tag=eval \
+hydra/launcher=icis_preempt
+```
+
+
 #### librispeech + voxceleb
 
+train
 ```
 poetry run python run_mtl_disjoint.py -m \
 data/module=mtl_disjoint_ls960h_vox2 \
@@ -128,10 +226,24 @@ tag=mtl_dj_ls_vox \
 hydra/launcher=icis_preempt
 ```
 
+eval
+```
+poetry run python run_mtl_disjoint.py -m \
+data/module=mtl_disjoint_eval \
+network=mtl_disjoint_wav2vec2_linear \
+fit_model=False \
+load_network_from_checkpoint=./models/mtl_dj_2s_ls+v2_silly-homelands-7.ckpt \
+data.pipe.speaker.test_dp.chunk_strategy=start \
+data.pipe.speaker.test_dp.chunk_size_sec=2,10,2_000_000_000 \
+tag=eval \
+hydra/launcher=icis_preempt
+```
+
 ### disjoint, 10 seconds
 
 #### librispeech
 
+train
 ```
 poetry run python run_mtl_disjoint.py -m \
 data/module=mtl_disjoint_ls960h \
@@ -143,8 +255,12 @@ tag=mtl_dj10_ls \
 hydra/launcher=icis_preempt
 ```
 
+eval
+tbd
+
 #### librispeech + voxceleb
 
+train
 ```
 poetry run python run_mtl_disjoint.py -m \
 data/module=mtl_disjoint_ls960h_vox2 \
@@ -153,6 +269,19 @@ data.pipe.speaker.train_dp.chunk_size_sec=10 \
 data.pipe.speaker.train_dp.batch_size=20 \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
 tag=mtl_dj10_ls_vox \
+hydra/launcher=icis_preempt
+```
+
+eval
+```
+poetry run python run_mtl_disjoint.py -m \
+data/module=mtl_disjoint_eval \
+network=mtl_disjoint_wav2vec2_linear \
+fit_model=False \
+load_network_from_checkpoint=./models/mtl_dj_10s_ls+v2_passionate-capitalism-0.ckpt \
+data.pipe.speaker.test_dp.chunk_strategy=start \
+data.pipe.speaker.test_dp.chunk_size_sec=2,10,2_000_000_000 \
+tag=eval \
 hydra/launcher=icis_preempt
 ```
 
@@ -171,7 +300,7 @@ data=ls+vox2
 ```
 TODO
 ```
-
+-e 'ssh -J bastion-user@bastion-host:22'
 # Table 3
 
 all model checkpoints result from experiments in Table 1
