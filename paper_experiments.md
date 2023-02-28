@@ -174,6 +174,16 @@ optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
 tag=mtl_j_ls_vox \
 hydra/launcher=icis_preempt
 ```
+```
+poetry run python run_mtl_joint.py -m \
+data/module=mtl_joint_ls960h_vox2 \
+network=mtl_joint_wav2vec2_linear \
+optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
+optim.loss.static_speech_weight=0.9 optim.loss.static_speaker_weight=0.1 \
+tag=mtl_j_ls_vox \
+hydra/launcher=icis_preempt
+```
+
 
 eval
 ```
@@ -229,6 +239,15 @@ optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
 tag=mtl_dj_ls_vox \
 hydra/launcher=icis_preempt
 ```
+```
+poetry run python run_mtl_disjoint.py -m \
+data/module=mtl_disjoint_ls960h_vox2 \
+network=mtl_disjoint_wav2vec2_linear \
+optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
+optim.loss.static_speech_weight=0.9 optim.loss.static_speaker_weight=0.1 \
+tag=mtl_dj_ls_vox \
+hydra/launcher=icis_preempt
+```
 
 eval
 ```
@@ -272,6 +291,17 @@ network=mtl_disjoint_wav2vec2_linear,mtl_disjoint_wav2vec2_linear_no_reg \
 data.pipe.speaker.train_dp.chunk_size_sec=10 \
 data.pipe.speaker.train_dp.batch_size=20 \
 optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
+tag=mtl_dj10_ls_vox \
+hydra/launcher=icis_preempt
+```
+```
+poetry run python run_mtl_disjoint.py -m \
+data/module=mtl_disjoint_ls960h_vox2 \
+network=mtl_disjoint_wav2vec2_linear \
+data.pipe.speaker.train_dp.chunk_size_sec=10 \
+data.pipe.speaker.train_dp.batch_size=20 \
+optim.algo.lr=1e-6,3e-6,1e-5,3e-5,1e-4,3e-4 \
+optim.loss.static_speech_weight=0.9 optim.loss.static_speaker_weight=0.1 \
 tag=mtl_dj10_ls_vox \
 hydra/launcher=icis_preempt
 ```
