@@ -325,8 +325,47 @@ hydra/launcher=snellius
 data=vox2
 
 ```
-TODO
+poetry run python run_speaker.py -m \
+data/module=speaker_vox2 \
+network=speaker_wav2vec2_ecapa \
+optim.algo.lr=1e-5,3e-5,1e-4 \
+data.pipe.speaker.train_dp.chunk_size_sec=2 \
+tag=skr_vox_ecapa \
+hydra/launcher=icis_preempt
 ```
+```
+poetry run python run_speaker.py -m \
+data/module=speaker_vox2 \
+network=speaker_wav2vec2_ecapa \
+optim.algo.lr=1e-5,3e-5,1e-4 \
+data.pipe.speaker.train_dp.chunk_size_sec=10 \
+data.pipe.speaker.train_dp.batch_size=20 \
+tag=skr_vox_ecapa \
+hydra/launcher=icis_preempt
+```
+```
+poetry run python run_speaker.py -m \
+data/module=speaker_vox2 \
+network=speaker_wav2vec2_linear \
+optim.algo.lr=1e-5,3e-5,1e-4 \
+network.head_cfg.pool_method=first \
+data.pipe.speaker.train_dp.chunk_size_sec=2 \
+tag=skr_vox_first \
+hydra/launcher=icis_preempt
+```
+```
+poetry run python run_speaker.py -m \
+data/module=speaker_vox2 \
+network=speaker_wav2vec2_linear \
+optim.algo.lr=1e-5,3e-5,1e-4 \
+network.head_cfg.pool_method=first \
+data.pipe.speaker.train_dp.chunk_size_sec=10 \
+data.pipe.speaker.train_dp.batch_size=20 \
+tag=skr_vox_first \
+hydra/launcher=icis_preempt
+```
+
+
 
 ## MTL disjoint:
 data=ls+vox2
@@ -334,9 +373,9 @@ data=ls+vox2
 ```
 TODO
 ```
--e 'ssh -J bastion-user@bastion-host:22'
+
 # Table 3
 
-all model checkpoints result from experiments in Table 1
+all model checkpoints result from experiments in Table 1 and are retrieving with the 'eval' commands.
 
 
