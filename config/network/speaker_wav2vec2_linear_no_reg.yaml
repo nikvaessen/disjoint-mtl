@@ -14,6 +14,7 @@ num_steps_freeze_transformer: 3_000
 use_gradient_checkpointing: true
 
 # head on top of wav2vec2 for speaker recognition
+head_layer: -1
 head_cfg:
   _target_: src.network.heads.LinearProjectionHeadConfig
 
