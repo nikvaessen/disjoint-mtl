@@ -42,6 +42,7 @@ class Wav2vec2ForSpeakerRecognitionConfig:
 
     # head on top of wav2vec2 for speaker recognition
     head_cfg: SpeakerHeadConfig
+    head_layer: int = -1 # on which layer to apply the speaker recognition head (-1=last)
 
     # reg settings
     apply_spec_augment: bool = True
@@ -143,9 +144,14 @@ class Wav2vec2ForSpeakerRecognition(SpeakerRecognitionLightningModule):
         return self.head.speaker_embedding_size
 
     def compute_speaker_embedding(self, input_tensor: t.Tensor) -> t.Tensor:
-        sequence = self.wav2vec2(input_tensor).last_hidden_state
-        embedding = self.head.compute_embedding(sequence)
+        result = self.wav2vec2(input_tensor)
 
+        if self.cfg.head_layer == -1:
+            sequence = result.last_hidden_state
+        else:
+            sequence = result.hidden_states[self.cfg.head_layer]
+
+        embedding = self.head.compute_embedding(sequence)
         return embedding
 
     def compute_speaker_prediction(self, embedding_tensor: t.Tensor) -> t.Tensor:
