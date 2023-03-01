@@ -36,7 +36,7 @@ speech_dm_cfg:
     - ${oc.env:LIBRISPEECH_DIR}/shards/test-clean
     - ${oc.env:LIBRISPEECH_DIR}/shards/test-other
     - ${oc.env:HUB5_DIR}/shards
-    - ${oc.env.VOXCELEB_DIR}/shards/vox1_test_o
+    - ${oc.env:VOXCELEB_DIR}/shards/vox1_test_o
 
 speaker_dm_cfg:
   _target_: src.data.module.SpeakerRecognitionDataModuleConfig
