@@ -144,7 +144,7 @@ class Wav2vec2ForSpeakerRecognition(SpeakerRecognitionLightningModule):
         return self.head.speaker_embedding_size
 
     def compute_speaker_embedding(self, input_tensor: t.Tensor) -> t.Tensor:
-        result = self.wav2vec2(input_tensor)
+        result = self.wav2vec2(input_tensor, output_hidden_states=self.cfg.head_layer >= 0)
 
         if self.cfg.head_layer == -1:
             sequence = result.last_hidden_state
