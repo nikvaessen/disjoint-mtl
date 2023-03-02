@@ -463,6 +463,10 @@ class DisjointMTLLightningModule(BaseLightningModule):
         for k, v in g2_dict.items():
             print(k, v)
 
+        print("shared params")
+        for k, v in self.shared_params():
+            print(k)
+
         print("shapes (g1, g2)")
         print(g1.shape)
         print(g2.shape)
