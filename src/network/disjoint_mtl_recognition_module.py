@@ -336,9 +336,6 @@ class DisjointMTLLightningModule(BaseLightningModule):
         return loss
 
     def grad2vec(self, set_grad_to_none=True):
-        if self.grad_norm_value is not None:
-            t.nn.utils.clip_grad_norm(self.parameters(), max_norm=self.grad_norm_value)
-
         with torch.no_grad():
             # extract all gradients from shared parameters and put them into a single vector
             reconstruction_dict = {}
@@ -428,33 +425,35 @@ class DisjointMTLLightningModule(BaseLightningModule):
 
         # scale losses
         if self.apply_dsi_head:
-            speech_weight, speaker_weight, dsi_weight = self.loss_fn.compute_scale(
-                speech_loss_value=loss_speech,
-                speaker_loss_value=loss_speaker,
-                dsi_loss_value=loss_dsi_head,
-            )
+            with torch.no_grad():
+                speech_weight, speaker_weight, dsi_weight = self.loss_fn.compute_scale(
+                    speech_loss_value=loss_speech,
+                    speaker_loss_value=loss_speaker,
+                    dsi_loss_value=loss_dsi_head,
+                )
 
             loss_speech = loss_speech * speech_weight
             loss_speaker = loss_speaker * speaker_weight
             loss_dsi_head = loss_dsi_head * dsi_weight
 
         else:
-            speech_weight, speaker_weight = self.loss_fn.compute_scale(
-                speech_loss_value=loss_speech, speaker_loss_value=loss_speaker
-            )
+            with torch.no_grad():
+                speech_weight, speaker_weight = self.loss_fn.compute_scale(
+                    speech_loss_value=loss_speech, speaker_loss_value=loss_speaker
+                )
 
             loss_speech = loss_speech * speech_weight
             loss_speaker = loss_speaker * speaker_weight
             loss_dsi_head = None
             dsi_weight = None
 
-        # backward step for task 1
-        self.manual_backward(loss_speech)
-        g1, g1_dict = self.grad2vec(set_grad_to_none=True)
-
         # backward step for task 2
         self.manual_backward(loss_speaker)
         g2, g2_dict = self.grad2vec(set_grad_to_none=True)
+
+        # backward step for task 1
+        self.manual_backward(loss_speech)
+        g1, g1_dict = self.grad2vec(set_grad_to_none=True)
 
         if self.apply_dsi_head:
             self.manual_backward(loss_dsi_head)
@@ -478,6 +477,9 @@ class DisjointMTLLightningModule(BaseLightningModule):
         else:
             g0 = None
             ca_grad_weights = None
+
+        if self.grad_norm_value is not None:
+            t.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.grad_norm_value)
 
         opt.step()
         lr_schedule.step()
