@@ -222,8 +222,7 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
                     if idx <= last_layer:
                         params.append((k, v))
 
-            # return params
-            return self.wav2vec2.named_parameters()
+            return params
 
     def _construct_attention_mask(self, num_audio_samples: List[int], device: str):
         assert len(num_audio_samples) >= 1
