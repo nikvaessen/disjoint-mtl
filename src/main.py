@@ -434,6 +434,7 @@ def run_train_eval_script(cfg: DictConfig):
     torch.set_float32_matmul_precision("medium")
 
     # print config
+    print(f"current working directory: {os.getcwd()}")
     print(f"current git commit hash: {get_git_revision_hash()}")
     print(f"PyTorch version is {t.__version__}")
     print(f"PyTorch Lightning version is {pl.__version__}")
