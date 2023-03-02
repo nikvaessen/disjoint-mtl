@@ -447,29 +447,13 @@ class DisjointMTLLightningModule(BaseLightningModule):
             loss_dsi_head = None
             dsi_weight = None
 
-        # backward step for task 2 (speaker needs to go first due to potentially less layers)
+        # backward step for task 2
         self.manual_backward(loss_speaker)
         g2, g2_dict = self.grad2vec(set_grad_to_none=True)
 
         # backward step for task 1
         self.manual_backward(loss_speech)
         g1, g1_dict = self.grad2vec(set_grad_to_none=True)
-
-        print("g1_dict")
-        for k, v in g1_dict.items():
-            print(k, v)
-
-        print("g2_dict")
-        for k, v in g2_dict.items():
-            print(k, v)
-
-        print("shared params")
-        for k, v in self.shared_params():
-            print(k)
-
-        print("shapes (g1, g2)")
-        print(g1.shape)
-        print(g2.shape)
 
         if self.apply_dsi_head:
             self.manual_backward(loss_dsi_head)
