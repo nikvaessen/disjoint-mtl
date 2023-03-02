@@ -208,13 +208,22 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
         elif "large" in self.cfg.huggingface_id:
             last_layer = 24
 
-        if last_shared_layer == -1 or last_shared_layer == last_layer :
+        if last_shared_layer == -1 or last_shared_layer == last_layer:
             return self.wav2vec2.named_parameters()
         else:
-            for k, v in self.wav2vec2.named_parameters():
-                print(k)
+            params = []
 
-            exit()
+            for k, v in self.wav2vec2.named_parameters():
+                if not "encoder.layers." in k:
+                    params.append((k, v))
+                else:
+                    idx = int(k.split(".")[2])
+                    assert 0 <= idx < last_layer
+                    if idx <= last_layer:
+                        params.append((k, v))
+
+            # return params
+            return self.wav2vec2.named_parameters()
 
     def _construct_attention_mask(self, num_audio_samples: List[int], device: str):
         assert len(num_audio_samples) >= 1
