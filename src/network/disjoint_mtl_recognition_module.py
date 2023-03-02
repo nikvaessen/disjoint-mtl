@@ -391,10 +391,6 @@ class DisjointMTLLightningModule(BaseLightningModule):
 
         # forward step for task 1 (asr)
         print("### !! SPEECH STEP !! ###")
-        print("###")
-        for k, v in self.wav2vec2.named_parameters():
-            print(k, 'grad:', v.grad is not None)
-        print("###")
 
         (_, (asr_prediction, asr_pred_lengths)) = self.forward(
             asr_batch.audio_tensor, asr_batch.audio_num_frames, step="speech"
@@ -407,12 +403,6 @@ class DisjointMTLLightningModule(BaseLightningModule):
         )
 
         # forward step for task 2 (sv)
-        print("### !! SPEAKER STEP !! ###")
-        print("###")
-        for k, v in self.wav2vec2.named_parameters():
-            print(k, 'grad:', v.grad is not None)
-        print("###")
-
         (_, (sv_embedding, sv_logits)) = self.forward(
             sv_batch.audio_tensor, sv_batch.audio_num_frames, step="speaker"
         )
@@ -463,11 +453,20 @@ class DisjointMTLLightningModule(BaseLightningModule):
         # backward step for task 1
         print("### BACKWARD SPEECH ###")
         self.manual_backward(loss_speech)
+        print("### grad info ###")
+        for k, v in self.wav2vec2.named_parameters():
+            print(k, "grad:", v.grad is not None)
+        print("###")
+
         g1, g1_dict = self.grad2vec(set_grad_to_none=True)
 
         # backward step for task 2
         print("### BACKWARD SPEAKER ###")
         self.manual_backward(loss_speaker)
+        print("### grad info ###")
+        for k, v in self.wav2vec2.named_parameters():
+            print(k, "grad:", v.grad is not None)
+        print("###")
         g2, g2_dict = self.grad2vec(set_grad_to_none=True)
 
         if self.apply_dsi_head:
