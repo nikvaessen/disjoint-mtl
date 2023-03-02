@@ -337,7 +337,7 @@ class DisjointMTLLightningModule(BaseLightningModule):
 
     def grad2vec(self, set_grad_to_none=True):
         if self.grad_norm_value is not None:
-            t.nn.utils.clip_grad_norm(self.parameters(), max_norm=self.grad_norm_value)
+            t.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.grad_norm_value)
 
         with torch.no_grad():
             # extract all gradients from shared parameters and put them into a single vector
