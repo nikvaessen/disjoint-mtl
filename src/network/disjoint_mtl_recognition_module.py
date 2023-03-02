@@ -441,7 +441,7 @@ class DisjointMTLLightningModule(BaseLightningModule):
             loss_dsi_head = loss_dsi_head * dsi_weight
 
         else:
-            with torch.no_grad:
+            with torch.no_grad():
                 speech_weight, speaker_weight = self.loss_fn.compute_scale(
                     speech_loss_value=loss_speech, speaker_loss_value=loss_speaker
                 )
