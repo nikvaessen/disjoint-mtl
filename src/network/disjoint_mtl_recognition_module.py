@@ -459,6 +459,9 @@ class DisjointMTLLightningModule(BaseLightningModule):
 
         # backward step for task 2
         print("### BACKWARD SPEAKER ###")
+        for k, v in self.wav2vec2.named_parameters():
+            print(k, "grad:", v.grad is not None)
+        print("###")
         self.manual_backward(loss_speaker)
         print("### grad info ###")
         for k, v in self.wav2vec2.named_parameters():
