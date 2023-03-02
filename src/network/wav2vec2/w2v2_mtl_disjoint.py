@@ -213,7 +213,8 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
         else:
             for k, v in self.wav2vec2.named_parameters():
                 print(k)
-                exit()
+
+            exit()
 
     def _construct_attention_mask(self, num_audio_samples: List[int], device: str):
         assert len(num_audio_samples) >= 1
