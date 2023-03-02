@@ -215,18 +215,13 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
             params = []
 
             for k, v in self.wav2vec2.named_parameters():
-                added = False
                 if not "encoder.layers." in k:
                     params.append((k, v))
-                    added = True
                 else:
                     idx = int(k.split(".")[2])
                     assert 0 <= idx < last_layer
                     if idx <= last_shared_layer:
                         params.append((k, v))
-                        added = True
-
-                print(k, "is shared", added)
 
             return params
 
