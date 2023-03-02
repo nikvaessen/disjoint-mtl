@@ -220,7 +220,7 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
                 else:
                     idx = int(k.split(".")[2])
                     assert 0 <= idx < last_layer
-                    if idx <= last_shared_layer:
+                    if idx < last_shared_layer:
                         params.append((k, v))
 
             return params
