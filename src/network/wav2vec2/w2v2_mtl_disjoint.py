@@ -133,6 +133,7 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
                 "hidden_dropout": cfg.hidden_dropout,
                 "attention_dropout": cfg.attention_dropout,
                 "feat_proj_dropout": cfg.feat_proj_dropout,
+                "layerdrop": False
             },
         )
 
