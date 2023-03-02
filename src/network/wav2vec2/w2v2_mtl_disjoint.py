@@ -201,7 +201,19 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
         return sequence_output, sequence_lengths
 
     def shared_params(self) -> Iterator[Tuple[str, Parameter]]:
-        return self.wav2vec2.named_parameters()
+        last_shared_layer = self.cfg.speaker_head_layer
+
+        if "base" in self.cfg.huggingface_id:
+            last_layer = 12
+        elif "large" in self.cfg.huggingface_id:
+            last_layer = 24
+
+        if last_shared_layer == -1 or last_shared_layer == last_layer :
+            return self.wav2vec2.named_parameters()
+        else:
+            for k, v in self.wav2vec2.named_parameters():
+                print(k)
+                exit()
 
     def _construct_attention_mask(self, num_audio_samples: List[int], device: str):
         assert len(num_audio_samples) >= 1
