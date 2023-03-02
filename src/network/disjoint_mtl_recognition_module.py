@@ -441,14 +441,15 @@ class DisjointMTLLightningModule(BaseLightningModule):
             loss_dsi_head = loss_dsi_head * dsi_weight
 
         else:
-            speech_weight, speaker_weight = self.loss_fn.compute_scale(
-                speech_loss_value=loss_speech, speaker_loss_value=loss_speaker
-            )
+            with torch.no_grad:
+                speech_weight, speaker_weight = self.loss_fn.compute_scale(
+                    speech_loss_value=loss_speech, speaker_loss_value=loss_speaker
+                )
 
-            loss_speech = loss_speech * speech_weight
-            loss_speaker = loss_speaker * speaker_weight
-            loss_dsi_head = None
-            dsi_weight = None
+                loss_speech = loss_speech * speech_weight
+                loss_speaker = loss_speaker * speaker_weight
+                loss_dsi_head = None
+                dsi_weight = None
 
         # backward step for task 1
         print("### BACKWARD SPEECH ###")
