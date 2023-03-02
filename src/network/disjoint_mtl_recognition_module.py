@@ -455,6 +455,18 @@ class DisjointMTLLightningModule(BaseLightningModule):
         self.manual_backward(loss_speech)
         g1, g1_dict = self.grad2vec(set_grad_to_none=True)
 
+        print("g1_dict")
+        for k, v in g1_dict.items():
+            print(k, v)
+
+        print("g2_dict")
+        for k, v in g2_dict.items():
+            print(k, v)
+
+        print("shapes (g1, g2)")
+        print(g1.shape)
+        print(g2.shape)
+
         if self.apply_dsi_head:
             self.manual_backward(loss_dsi_head)
             g3, g3_dict = self.grad2vec(set_grad_to_none=True)
