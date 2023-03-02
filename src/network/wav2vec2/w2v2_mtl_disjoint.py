@@ -57,6 +57,7 @@ class Wav2vec2ForDisjointMTLConfig:
     # head on top of wav2vec2 for speaker recognition
     speech_head_cfg: SpeechHeadConfig
     speaker_head_cfg: SpeakerHeadConfig
+    speaker_head_layer: int = -1
 
     # reg settings
     apply_spec_augment: bool = True
@@ -174,15 +175,27 @@ class Wav2vec2ForDisjointMTL(DisjointMTLLightningModule):
         )
 
     def compute_embedding_sequence(
-        self, input_tensor: t.Tensor, lengths: List[int]
+        self, input_tensor: t.Tensor, lengths: List[int], step: str = None
     ) -> Tuple[t.Tensor, List[int]]:
-        sequence_output = self.wav2vec2(
+        result = self.wav2vec2(
             input_values=input_tensor,
             attention_mask=self._construct_attention_mask(
                 num_audio_samples=lengths,
                 device=self.device,
             ),
-        ).last_hidden_state
+            output_hidden_states=self.cfg.speaker_head_layer >= 0,
+        )
+
+        if step == "speech":
+            sequence_output = result.last_hidden_state
+        elif step == "speaker":
+            if self.cfg.speaker_head_layer >= 0:
+                sequence_output = result.hidden_states[self.cfg.speaker_head_layer]
+            else:
+                sequence_output = result.last_hidden_state
+        else:
+            raise ValueError(f"unknown {step=}")
+
         sequence_lengths = self._compute_feature_extractor_lengths(lengths)
 
         return sequence_output, sequence_lengths

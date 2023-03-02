@@ -23,6 +23,7 @@ apply_dsi_head: false
 dsi_head_alpha: 1
 
 # head on top of wav2vec2 for speaker recognition
+speaker_head_layer: -1
 speaker_head_cfg:
   _target_: src.network.heads.EcapaTdnnHeadConfig
   use_cosine_linear: true

@@ -239,7 +239,7 @@ class DisjointMTLLightningModule(BaseLightningModule):
 
     @abstractmethod
     def compute_embedding_sequence(
-        self, input_tensor: t.Tensor, lengths: List[int]
+        self, input_tensor: t.Tensor, lengths: List[int], step: str = None
     ) -> Tuple[t.Tensor, List[int]]:
         # transform:
         # 1) input_tensor with shape [BATCH_SIZE, NUM_SAMPLES]
@@ -286,23 +286,32 @@ class DisjointMTLLightningModule(BaseLightningModule):
     def shared_params(self) -> Iterator[Tuple[str, Parameter]]:
         return self.named_parameters()
 
-    def forward(self, input_tensor: torch.Tensor, lengths: List[int]):
-        sequence, sequence_lengths = self.compute_embedding_sequence(
-            input_tensor, lengths
-        )
+    def forward(self, input_tensor: torch.Tensor, lengths: List[int], step: str):
+        if step == "speech":
+            asr_sequence, asr_sequence_lengths = self.compute_embedding_sequence(
+                input_tensor, lengths, step="speech"
+            )
+            asr_prediction, asr_pred_lengths = self.compute_vocabulary_prediction(
+                asr_sequence, asr_sequence_lengths
+            )
 
-        asr_prediction, asr_pred_lengths = self.compute_vocabulary_prediction(
-            sequence, sequence_lengths
-        )
+            return (
+                (asr_sequence, asr_sequence_lengths),
+                (asr_prediction, asr_pred_lengths),
+            )
+        elif step == "speaker":
+            skr_sequence, skr_sequence_lengths = self.compute_embedding_sequence(
+                input_tensor, lengths, step="speaker"
+            )
+            speaker_embedding = self.compute_speaker_embedding(skr_sequence)
+            speaker_prediction = self.compute_speaker_prediction(speaker_embedding)
 
-        speaker_embedding = self.compute_speaker_embedding(sequence)
-        speaker_prediction = self.compute_speaker_prediction(speaker_embedding)
-
-        return (
-            (sequence, sequence_lengths),
-            (asr_prediction, asr_pred_lengths),
-            (speaker_embedding, speaker_prediction),
-        )
+            return (
+                (skr_sequence, skr_sequence_lengths),
+                (speaker_embedding, speaker_prediction),
+            )
+        else:
+            raise ValueError("unknown step")
 
     def forward_dsi_head(
         self,
@@ -381,8 +390,8 @@ class DisjointMTLLightningModule(BaseLightningModule):
         self.zero_grad(set_to_none=True)
 
         # forward step for task 1 (asr)
-        (_, (asr_prediction, asr_pred_lengths), _) = self.forward(
-            asr_batch.audio_tensor, asr_batch.audio_num_frames
+        (_, (asr_prediction, asr_pred_lengths)) = self.forward(
+            asr_batch.audio_tensor, asr_batch.audio_num_frames, step="speech"
         )
         loss_speech = self.loss_fn.compute_speech_loss(
             speech_predictions=asr_prediction,
@@ -392,8 +401,8 @@ class DisjointMTLLightningModule(BaseLightningModule):
         )
 
         # forward step for task 2 (sv)
-        (_, _, (sv_embedding, sv_logits)) = self.forward(
-            sv_batch.audio_tensor, sv_batch.audio_num_frames
+        (_, (sv_embedding, sv_logits)) = self.forward(
+            sv_batch.audio_tensor, sv_batch.audio_num_frames, step="speaker"
         )
         loss_speaker, sv_prediction = self.loss_fn.compute_speaker_loss(
             speaker_logits=sv_logits, speaker_labels=sv_batch.id_tensor
@@ -688,14 +697,12 @@ class DisjointMTLLightningModule(BaseLightningModule):
     ) -> Optional[STEP_OUTPUT]:
         mode = self.val_modes[dataloader_idx]
 
-        (
-            _,
-            (asr_prediction, asr_pred_lengths),
-            (speaker_embedding, speaker_prediction),
-        ) = self.forward(batch.audio_tensor, batch.audio_num_frames)
-
         if mode == "speaker":
             assert isinstance(batch, SpeakerRecognitionBatch)
+            (
+                (skr_sequence, skr_sequence_lengths),
+                (speaker_embedding, speaker_prediction),
+            ) = self.forward(batch.audio_tensor, batch.audio_num_frames, step="speaker")
 
             loss_speaker, sv_prediction = self.loss_fn.speaker_loss(
                 speaker_prediction, batch.id_tensor
@@ -708,6 +715,10 @@ class DisjointMTLLightningModule(BaseLightningModule):
 
         elif mode == "speech":
             assert isinstance(batch, SpeechRecognitionBatch)
+            (
+                (asr_sequence, asr_sequence_lengths),
+                (asr_prediction, asr_pred_lengths),
+            ) = self.forward(batch.audio_tensor, batch.audio_num_frames, step="speech")
 
             loss_speech = self.loss_fn.speech_loss(
                 predictions=asr_prediction,
@@ -765,14 +776,12 @@ class DisjointMTLLightningModule(BaseLightningModule):
     ) -> Optional[STEP_OUTPUT]:
         mode = self.test_modes[dataloader_idx]
 
-        (
-            _,
-            (asr_prediction, asr_pred_lengths),
-            (speaker_embedding, speaker_prediction),
-        ) = self.forward(batch.audio_tensor, batch.audio_num_frames)
-
         if mode == "speaker":
             assert isinstance(batch, SpeakerRecognitionBatch)
+            (
+                (skr_sequence, skr_sequence_lengths),
+                (speaker_embedding, speaker_prediction),
+            ) = self.forward(batch.audio_tensor, batch.audio_num_frames, step="speaker")
 
             return {
                 "embedding": speaker_embedding.detach().cpu(),
@@ -781,6 +790,11 @@ class DisjointMTLLightningModule(BaseLightningModule):
 
         elif mode == "speech":
             assert isinstance(batch, SpeechRecognitionBatch)
+
+            (
+                (asr_sequence, asr_sequence_lengths),
+                (asr_prediction, asr_pred_lengths),
+            ) = self.forward(batch.audio_tensor, batch.audio_num_frames, step="speech")
 
             predicted_transcriptions = decode_predictions_greedy(
                 predictions=asr_prediction,
