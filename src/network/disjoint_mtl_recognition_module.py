@@ -339,6 +339,9 @@ class DisjointMTLLightningModule(BaseLightningModule):
         if self.grad_norm_value is not None:
             t.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.grad_norm_value)
 
+        for k, v in self.wav2vec2.named_parameters():
+            print(k, v.grad is not None)
+
         with torch.no_grad():
             # extract all gradients from shared parameters and put them into a single vector
             reconstruction_dict = {}
