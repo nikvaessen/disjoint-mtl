@@ -1,0 +1,93 @@
+creating a data pipeline from the following tar files:
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-100/train_clean_100.000000.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-100/train_clean_100.000001.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-100/train_clean_100.000002.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-100/train_clean_100.000003.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-100/train_clean_100.000004.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-100/train_clean_100.000005.partial.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000000.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000001.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000002.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000003.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000004.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000005.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000006.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000007.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000008.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000009.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000010.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000011.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000012.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000013.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000014.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000015.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000016.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000017.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000018.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360/train_clean_360.000019.partial.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000000.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000001.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000002.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000003.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000004.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000005.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000006.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000007.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000008.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000009.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000010.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000011.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000012.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000013.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000014.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000015.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000016.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000017.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000018.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000019.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000020.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000021.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000022.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000023.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000024.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000025.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000026.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000027.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500/train_other_500.000028.partial.tar
+Aggregation of:
+	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-100
+	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-clean-360
+	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/train-other-500
+
+number of samples: 267156
+unique keys: 267156
+
+number of speakers: 2314
+number of males: 1195
+number of females: 1119
+number of male audio samples: 137526
+number of female audio samples: 129630
+
+total number of sessions: 5189
+avg sessions per speaker: 2.24
+min sessions per speaker: 1
+max sessions per speaker: 6
+
+avg number of frames: 196811.26	(12.30 seconds)
+min number of frames: 13280	(0.83 seconds)
+max number of frames: 475760	(29.73 seconds)
+quantile 10%: 88240.00	(5.51 seconds)
+quantile 20%: 145440.00	(9.09 seconds)
+quantile 80%: 245040.00	(15.31 seconds)
+quantile 90%: 252400.00	(15.78 seconds)
+
+duration: 3286206.84 seconds	(~912.84 hours)
+
+avg number of characters in transcription: 176.99
+min number of characters in transcription: 1
+max number of characters in transcription: 524
+quantile 10%: 77.00 characters
+quantile 20%: 125.00 characters
+quantile 80%: 229.00 characters
+quantile 90%: 247.00 characters
+

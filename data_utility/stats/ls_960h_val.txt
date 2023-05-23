@@ -1,0 +1,43 @@
+creating a data pipeline from the following tar files:
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/val-clean-100/val_clean_100.000000.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/val-clean-360/val_clean_360.000000.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/val-clean-360/val_clean_360.000001.partial.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/val-other-500/val_other_500.000000.tar
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/val-other-500/val_other_500.000001.partial.tar
+Aggregation of:
+	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/val-clean-100
+	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/val-clean-360
+	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/val-other-500
+
+number of samples: 14085
+unique keys: 14085
+
+number of speakers: 266
+number of males: 141
+number of females: 125
+number of male audio samples: 7826
+number of female audio samples: 6259
+
+total number of sessions: 277
+avg sessions per speaker: 1.04
+min sessions per speaker: 1
+max sessions per speaker: 3
+
+avg number of frames: 197190.19	(12.32 seconds)
+min number of frames: 24320	(1.52 seconds)
+max number of frames: 326400	(20.40 seconds)
+quantile 10%: 89680.00	(5.61 seconds)
+quantile 20%: 147680.00	(9.23 seconds)
+quantile 80%: 245120.00	(15.32 seconds)
+quantile 90%: 252400.00	(15.78 seconds)
+
+duration: 173588.99 seconds	(~48.22 hours)
+
+avg number of characters in transcription: 177.33
+min number of characters in transcription: 6
+max number of characters in transcription: 377
+quantile 10%: 79.00 characters
+quantile 20%: 127.00 characters
+quantile 80%: 229.00 characters
+quantile 90%: 246.00 characters
+

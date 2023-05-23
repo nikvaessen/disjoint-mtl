@@ -1,0 +1,37 @@
+creating a data pipeline from the following tar files:
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_o/vox1_test_o.000000.tar
+Aggregation of:
+	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_o
+
+number of samples: 4708
+unique keys: 4708
+
+number of speakers: 40
+number of males: 25
+number of females: 15
+number of male audio samples: 3330
+number of female audio samples: 1378
+
+total number of sessions: 674
+avg sessions per speaker: 16.85
+min sessions per speaker: 8
+max sessions per speaker: 35
+
+avg number of frames: 132555.36	(8.28 seconds)
+min number of frames: 63361	(3.96 seconds)
+max number of frames: 1104641	(69.04 seconds)
+quantile 10%: 68289.00	(4.27 seconds)
+quantile 20%: 74241.00	(4.64 seconds)
+quantile 80%: 168961.00	(10.56 seconds)
+quantile 90%: 227201.00	(14.20 seconds)
+
+duration: 39004.41 seconds	(~10.83 hours)
+
+avg number of characters in transcription: 132.01
+min number of characters in transcription: 1
+max number of characters in transcription: 1375
+quantile 10%: 55.00 characters
+quantile 20%: 68.00 characters
+quantile 80%: 173.00 characters
+quantile 90%: 235.00 characters
+

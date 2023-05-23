@@ -1,0 +1,43 @@
+creating a data pipeline from the following tar files:
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox2_dev/vox2_dev.000000.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox2_dev/vox2_dev.000001.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox2_dev/vox2_dev.000002.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox2_dev/vox2_dev.000003.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox2_dev/vox2_dev.000004.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox2_dev/vox2_dev.000005.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox2_dev/vox2_dev.000006.partial.tar
+Aggregation of:
+	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox2_dev
+
+number of samples: 33173
+unique keys: 33173
+
+number of speakers: 190
+number of males: 95
+number of females: 95
+number of male audio samples: 17417
+number of female audio samples: 15756
+
+total number of sessions: 4307
+avg sessions per speaker: 22.67
+min sessions per speaker: 6
+max sessions per speaker: 65
+
+avg number of frames: 121571.58	(7.60 seconds)
+min number of frames: 63488	(3.97 seconds)
+max number of frames: 1270784	(79.42 seconds)
+quantile 10%: 67584.00	(4.22 seconds)
+quantile 20%: 72704.00	(4.54 seconds)
+quantile 80%: 151552.00	(9.47 seconds)
+quantile 90%: 204800.00	(12.80 seconds)
+
+duration: 252055.87 seconds	(~70.02 hours)
+
+avg number of characters in transcription: 122.33
+min number of characters in transcription: 1
+max number of characters in transcription: 1382
+quantile 10%: 58.00 characters
+quantile 20%: 70.00 characters
+quantile 80%: 163.00 characters
+quantile 90%: 221.00 characters
+

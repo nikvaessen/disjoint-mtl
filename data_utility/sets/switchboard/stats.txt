@@ -1,0 +1,48 @@
+creating a data pipeline from the following tar files:
+ 	data/switchboard/shards/test/sw.000000.tar
+ 	data/switchboard/shards/test/sw.000001.tar
+ 	data/switchboard/shards/test/sw.000002.tar
+ 	data/switchboard/shards/test/sw.000003.tar
+ 	data/switchboard/shards/test/sw.000004.tar
+ 	data/switchboard/shards/test/sw.000005.tar
+ 	data/switchboard/shards/test/sw.000006.tar
+ 	data/switchboard/shards/test/sw.000007.tar
+ 	data/switchboard/shards/test/sw.000008.tar
+ 	data/switchboard/shards/test/sw.000009.tar
+ 	data/switchboard/shards/test/sw.000010.tar
+ 	data/switchboard/shards/test/sw.000011.tar
+ 	data/switchboard/shards/test/sw.000012.tar
+ 	data/switchboard/shards/test/sw.000013.tar
+ 	data/switchboard/shards/test/sw.000014.tar
+ 	data/switchboard/shards/test/sw.000015.partial.tar
+Aggregation of:
+	data/switchboard/shards
+
+number of samples: 78304
+unique keys: 78304
+
+number of speakers: 472
+number of males: 253
+number of females: 219
+number of male audio samples: 37219
+number of female audio samples: 41085
+
+total number of sessions: 2280
+avg sessions per speaker: 9.55
+min sessions per speaker: 2
+max sessions per speaker: 30
+
+avg number of frames: 115071.66	(7.19 seconds)
+min number of frames: 48000	(3.00 seconds)
+max number of frames: 320000	(20.00 seconds)
+quantile 10%: 55040.00	(3.44 seconds)
+quantile 20%: 63040.00	(3.94 seconds)
+quantile 80%: 160705.20	(10.04 seconds)
+quantile 90%: 207360.00	(12.96 seconds)
+
+duration: 563160.70 seconds	(~156.43 hours)
+
+avg number of characters in transcription: 116.55
+min number of characters in transcription: 3
+max number of characters in transcription: 475
+

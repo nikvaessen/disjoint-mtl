@@ -1,0 +1,37 @@
+creating a data pipeline from the following tar files:
+ 	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/dev-clean/dev_clean.000000.tar
+Aggregation of:
+	/ceph/das-scratch/users/nvaessen/data/librispeech/shards/dev-clean
+
+number of samples: 2703
+unique keys: 2703
+
+number of speakers: 40
+number of males: 20
+number of females: 20
+number of male audio samples: 1329
+number of female audio samples: 1374
+
+total number of sessions: 97
+avg sessions per speaker: 2.42
+min sessions per speaker: 1
+max sessions per speaker: 4
+
+avg number of frames: 114812.41	(7.18 seconds)
+min number of frames: 23120	(1.45 seconds)
+max number of frames: 522320	(32.65 seconds)
+quantile 10%: 43616.00	(2.73 seconds)
+quantile 20%: 53680.00	(3.35 seconds)
+quantile 80%: 162608.00	(10.16 seconds)
+quantile 90%: 213264.00	(13.33 seconds)
+
+duration: 19396.12 seconds	(~5.39 hours)
+
+avg number of characters in transcription: 106.72
+min number of characters in transcription: 3
+max number of characters in transcription: 516
+quantile 10%: 34.00 characters
+quantile 20%: 46.00 characters
+quantile 80%: 156.00 characters
+quantile 90%: 204.00 characters
+

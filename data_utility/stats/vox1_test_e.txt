@@ -1,0 +1,66 @@
+creating a data pipeline from the following tar files:
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000000.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000001.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000002.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000003.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000004.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000005.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000006.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000007.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000008.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000009.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000010.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000011.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000012.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000013.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000014.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000015.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000016.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000017.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000018.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000019.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000020.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000021.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000022.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000023.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000024.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000025.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000026.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000027.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000028.tar
+ 	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e/vox1_test_e.000029.partial.tar
+Aggregation of:
+	/ceph/das-scratch/users/nvaessen/data/voxceleb/shards/vox1_test_e
+
+number of samples: 145160
+unique keys: 145160
+
+number of speakers: 1251
+number of males: 690
+number of females: 561
+number of male audio samples: 84428
+number of female audio samples: 60732
+
+total number of sessions: 22086
+avg sessions per speaker: 17.92
+min sessions per speaker: 8
+max sessions per speaker: 36
+
+avg number of frames: 131833.10	(8.24 seconds)
+min number of frames: 63361	(3.96 seconds)
+max number of frames: 2318721	(144.92 seconds)
+quantile 10%: 68481.00	(4.28 seconds)
+quantile 20%: 74881.00	(4.68 seconds)
+quantile 80%: 168961.00	(10.56 seconds)
+quantile 90%: 227841.00	(14.24 seconds)
+
+duration: 1196055.79 seconds	(~332.24 hours)
+
+avg number of characters in transcription: 134.00
+min number of characters in transcription: 1
+max number of characters in transcription: 2090
+quantile 10%: 59.00 characters
+quantile 20%: 72.00 characters
+quantile 80%: 179.00 characters
+quantile 90%: 243.00 characters
+
