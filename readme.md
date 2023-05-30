@@ -6,7 +6,7 @@ See [paper_experiments.md](paper_experiments.md) for commands to reproduce resul
 
 See [here](https://surfdrive.surf.nl/files/index.php/s/YINHj9yBcxmy3cE) for some model checkpoints.
 
-See [here](https://surfdrive.surf.nl/files/index.php/s/KHBa8P0q4uhybKh) for VoxCeleb 1/2 ASR labels with [Whisper](https://github.com/openai/whisper).
+See [here](https://surfdrive.surf.nl/files/index.php/s/KHBa8P0q4uhybKh) for VoxCeleb 1 and VoxCeleb2 ASR labels with [Whisper](https://github.com/openai/whisper).
 
 # Quick start guide
 
