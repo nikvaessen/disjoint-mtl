@@ -56,7 +56,8 @@ style = theme_linedraw()
 # x_axis
 x_axis = scale_x_continuous(
   name='layer for SKR evaluation', 
-  breaks = c(1:12),
+  breaks=seq(0, 12, by = 1),
+  minor_breaks =NULL
 )
 
 # y_axis
